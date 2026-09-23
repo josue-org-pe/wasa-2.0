@@ -30,6 +30,9 @@ if errorlevel 1 (
 
 echo.
 echo [3/3] Generando instalador .exe con jpackage...
+taskkill /F /IM ChatLocal-2.0.exe >nul 2>&1
+taskkill /F /IM ChatLocal.exe >nul 2>&1
+timeout /t 1 /nobreak >nul
 if exist salida rmdir /s /q salida
 
 jpackage ^

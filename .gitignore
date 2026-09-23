@@ -1,0 +1,22 @@
+# Compiled output
+out/
+bin/
+*.class
+
+# Packaging & installer artifacts (heavy binaries)
+salida/
+*.exe
+*.msi
+
+# IDE & Editor files
+.idea/
+*.iml
+.vscode/
+.project
+.classpath
+.settings/
+
+# OS specific files
+Thumbs.db
+Desktop.ini
+.DS_Store
