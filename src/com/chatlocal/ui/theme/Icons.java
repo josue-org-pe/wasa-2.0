@@ -222,6 +222,16 @@ public final class Icons {
         });
     }
 
+    public static Icon camera(int size, Color color) {
+        return createVectorIcon(size, size, (g2, w, h) -> {
+            g2.setColor(color);
+            g2.setStroke(new BasicStroke(1.8f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
+            g2.drawRoundRect((int) (w * 0.12f), (int) (h * 0.3f), (int) (w * 0.76f), (int) (h * 0.54f), 5, 5);
+            g2.drawOval((int) (w * 0.34f), (int) (h * 0.42f), (int) (w * 0.32f), (int) (h * 0.32f));
+            g2.drawRoundRect((int) (w * 0.35f), (int) (h * 0.18f), (int) (w * 0.3f), (int) (h * 0.14f), 2, 2);
+        });
+    }
+
     public static Icon play(int size, Color color) {
         return createVectorIcon(size, size, (g2, w, h) -> {
             g2.setColor(color);
@@ -376,8 +386,163 @@ public final class Icons {
         });
     }
 
-    public static Icon avatar(String name, int size, Color bg, Color fg) {
+    public static Icon video(int size, Color color) {
         return createVectorIcon(size, size, (g2, w, h) -> {
+            g2.setColor(color);
+            g2.setStroke(new BasicStroke(1.8f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
+            float cw = w * 0.52f;
+            float ch = h * 0.46f;
+            float x = w * 0.14f;
+            float y = (h - ch) / 2.0f;
+            g2.drawRoundRect((int) x, (int) y, (int) cw, (int) ch, 4, 4);
+
+            Path2D p = new Path2D.Float();
+            p.moveTo(x + cw, y + ch * 0.25f);
+            p.lineTo(w * 0.86f, y + ch * 0.05f);
+            p.lineTo(w * 0.86f, y + ch * 0.95f);
+            p.lineTo(x + cw, y + ch * 0.75f);
+            p.closePath();
+            g2.draw(p);
+        });
+    }
+
+    public static Icon videoOff(int size, Color color) {
+        return createVectorIcon(size, size, (g2, w, h) -> {
+            g2.setColor(color);
+            g2.setStroke(new BasicStroke(1.8f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
+            float cw = w * 0.52f;
+            float ch = h * 0.46f;
+            float x = w * 0.14f;
+            float y = (h - ch) / 2.0f;
+            g2.drawRoundRect((int) x, (int) y, (int) cw, (int) ch, 4, 4);
+
+            Path2D p = new Path2D.Float();
+            p.moveTo(x + cw, y + ch * 0.25f);
+            p.lineTo(w * 0.86f, y + ch * 0.05f);
+            p.lineTo(w * 0.86f, y + ch * 0.95f);
+            p.lineTo(x + cw, y + ch * 0.75f);
+            p.closePath();
+            g2.draw(p);
+
+            // Línea diagonal tachada
+            g2.setColor(new Color(239, 68, 68));
+            g2.setStroke(new BasicStroke(2.2f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
+            g2.drawLine((int) (w * 0.12f), (int) (h * 0.88f), (int) (w * 0.88f), (int) (h * 0.12f));
+        });
+    }
+
+    public static Icon micOff(int size, Color color) {
+        return createVectorIcon(size, size, (g2, w, h) -> {
+            g2.setColor(color);
+            g2.setStroke(new BasicStroke(1.8f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
+            float cx = w / 2.0f;
+            // Cápsula
+            g2.drawRoundRect((int) (cx - w * 0.14f), (int) (h * 0.16f), (int) (w * 0.28f), (int) (h * 0.44f), (int) (w * 0.28f), (int) (w * 0.28f));
+            // Soporte
+            g2.draw(new Arc2D.Float(cx - w * 0.25f, h * 0.32f, w * 0.5f, h * 0.36f, 0, -180, Arc2D.OPEN));
+            g2.drawLine((int) cx, (int) (h * 0.68f), (int) cx, (int) (h * 0.82f));
+            g2.drawLine((int) (cx - w * 0.18f), (int) (h * 0.82f), (int) (cx + w * 0.18f), (int) (h * 0.82f));
+
+            // Línea diagonal tachada
+            g2.setColor(new Color(239, 68, 68));
+            g2.setStroke(new BasicStroke(2.2f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
+            g2.drawLine((int) (w * 0.15f), (int) (h * 0.85f), (int) (w * 0.85f), (int) (h * 0.15f));
+        });
+    }
+
+    public static Icon screenShare(int size, Color color) {
+        return createVectorIcon(size, size, (g2, w, h) -> {
+            g2.setColor(color);
+            g2.setStroke(new BasicStroke(1.8f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
+            // Pantalla
+            float m = w * 0.14f;
+            g2.drawRoundRect((int) m, (int) (h * 0.18f), (int) (w - 2 * m), (int) (h * 0.5f), 4, 4);
+            // Pie
+            g2.drawLine((int) (w * 0.5f), (int) (h * 0.68f), (int) (w * 0.5f), (int) (h * 0.82f));
+            g2.drawLine((int) (w * 0.32f), (int) (h * 0.82f), (int) (w * 0.68f), (int) (h * 0.82f));
+            // Flecha hacia arriba centrada
+            float cx = w * 0.5f;
+            float cy = h * 0.42f;
+            g2.drawLine((int) cx, (int) (cy - h * 0.14f), (int) cx, (int) (cy + h * 0.14f));
+            g2.drawLine((int) cx, (int) (cy - h * 0.14f), (int) (cx - w * 0.12f), (int) (cy - h * 0.02f));
+            g2.drawLine((int) cx, (int) (cy - h * 0.14f), (int) (cx + w * 0.12f), (int) (cy - h * 0.02f));
+        });
+    }
+
+    public static Icon phone(int size, Color color) {
+        return createVectorIcon(size, size, (g2, w, h) -> {
+            g2.setColor(color);
+            g2.setStroke(new BasicStroke(2.0f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
+            // Auricular telefónico
+            Path2D p = new Path2D.Float();
+            p.moveTo(w * 0.28f, h * 0.36f);
+            p.curveTo(w * 0.28f, h * 0.22f, w * 0.42f, h * 0.22f, w * 0.48f, h * 0.32f);
+            p.lineTo(w * 0.44f, h * 0.44f);
+            p.curveTo(w * 0.46f, h * 0.56f, w * 0.56f, h * 0.66f, w * 0.68f, h * 0.68f);
+            p.lineTo(w * 0.80f, h * 0.64f);
+            p.curveTo(w * 0.90f, h * 0.70f, w * 0.90f, h * 0.84f, w * 0.76f, h * 0.84f);
+            p.curveTo(w * 0.46f, h * 0.84f, w * 0.28f, h * 0.66f, w * 0.28f, h * 0.36f);
+            p.closePath();
+            g2.draw(p);
+        });
+    }
+
+    public static Icon phoneEnd(int size, Color color) {
+        return createVectorIcon(size, size, (g2, w, h) -> {
+            g2.setColor(color);
+            g2.setStroke(new BasicStroke(2.2f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
+            // Teléfono invertido horizontal para colgar
+            Path2D p = new Path2D.Float();
+            float cx = w / 2.0f;
+            float cy = h * 0.52f;
+            float r = w * 0.36f;
+            p.moveTo(cx - r, cy);
+            p.curveTo(cx - r * 0.7f, cy - r * 0.7f, cx + r * 0.7f, cy - r * 0.7f, cx + r, cy);
+            p.curveTo(cx + r * 0.6f, cy + r * 0.35f, cx + r * 0.35f, cy + r * 0.35f, cx + r * 0.35f, cy);
+            p.curveTo(cx + r * 0.2f, cy - r * 0.2f, cx - r * 0.2f, cy - r * 0.2f, cx - r * 0.35f, cy);
+            p.curveTo(cx - r * 0.35f, cy + r * 0.35f, cx - r * 0.6f, cy + r * 0.35f, cx - r, cy);
+            p.closePath();
+            g2.fill(p);
+        });
+    }
+
+    public static Icon sidebarToggle(int size, Color color) {
+        return createVectorIcon(size, size, (g2, w, h) -> {
+            g2.setColor(color);
+            g2.setStroke(new BasicStroke(2.0f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
+            // Tres líneas horizontales modernas con ancho dinámico
+            float padX = w * 0.18f;
+            g2.drawLine((int) padX, (int) (h * 0.28f), (int) (w - padX), (int) (h * 0.28f));
+            g2.drawLine((int) padX, (int) (h * 0.50f), (int) (w - padX * 1.5f), (int) (h * 0.50f));
+            g2.drawLine((int) padX, (int) (h * 0.72f), (int) (w - padX), (int) (h * 0.72f));
+        });
+    }
+
+    public static Icon avatar(String name, int size, Color bg, Color fg) {
+        return avatar(name, size, bg, fg, null);
+    }
+
+    public static Icon avatar(String name, int size, Color bg, Color fg, String imagePath) {
+        return createVectorIcon(size, size, (g2, w, h) -> {
+            if (imagePath != null && !imagePath.trim().isEmpty()) {
+                java.io.File imgFile = new java.io.File(imagePath);
+                if (imgFile.exists() && imgFile.isFile()) {
+                    try {
+                        BufferedImage raw = javax.imageio.ImageIO.read(imgFile);
+                        if (raw != null) {
+                            // Clip circular para avatar de foto
+                            g2.setClip(new java.awt.geom.Ellipse2D.Float(0, 0, w, h));
+                            g2.drawImage(raw, 0, 0, w, h, null);
+                            g2.setClip(null);
+                            g2.setColor(new Color(255, 255, 255, 40));
+                            g2.setStroke(new BasicStroke(1.5f));
+                            g2.drawOval(0, 0, w - 1, h - 1);
+                            return;
+                        }
+                    } catch (Exception ignored) {}
+                }
+            }
+
             g2.setColor(bg);
             g2.fillOval(0, 0, w, h);
 

@@ -29,6 +29,7 @@ public class ContactListItem extends JPanel {
     private final int unreadCount;
     private boolean selected = false;
     private boolean hovered = false;
+    private String avatarImagePath = null;
 
     public ContactListItem(ChatRoom room, boolean selected, ContactActionCallback callback) {
         this(room.getName(), room.getTopic(), 0x6366F1, true, room.isMeeting(), true, room.getUnreadCount(), selected, callback);
@@ -36,6 +37,7 @@ public class ContactListItem extends JPanel {
 
     public ContactListItem(UserProfile user, boolean selected, ContactActionCallback callback) {
         this(user.getUsername(), user.getStatusMessage(), user.getAvatarColorHex(), false, false, true, 0, selected, callback);
+        this.avatarImagePath = user.getAvatarImagePath();
     }
 
     public ContactListItem(String title, String subtitle, int colorHex, boolean isRoom,
@@ -52,6 +54,9 @@ public class ContactListItem extends JPanel {
 
         setOpaque(false);
         setPreferredSize(new Dimension(250, 56));
+        setMinimumSize(new Dimension(100, 56));
+        setMaximumSize(new Dimension(Integer.MAX_VALUE, 56));
+        setAlignmentX(Component.CENTER_ALIGNMENT);
         setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
 
         addMouseListener(new MouseAdapter() {
@@ -133,7 +138,7 @@ public class ContactListItem extends JPanel {
             g2.fillOval(avX, avY, avSize, avSize);
             icon.paintIcon(this, g2, avX + 7, avY + 8);
         } else {
-            Icon avatarIcon = Icons.avatar(title, avSize, new Color(colorHex), Color.WHITE);
+            Icon avatarIcon = Icons.avatar(title, avSize, new Color(colorHex), Color.WHITE, avatarImagePath);
             avatarIcon.paintIcon(this, g2, avX, avY);
 
             // Punto de estado verde

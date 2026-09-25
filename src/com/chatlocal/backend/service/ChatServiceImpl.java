@@ -5,6 +5,8 @@ import com.chatlocal.backend.event.MessageListener;
 import com.chatlocal.backend.model.*;
 import com.chatlocal.backend.network.ProtocolConstants;
 import com.chatlocal.backend.network.SocketConnection;
+import com.chatlocal.backend.service.videocall.VideoCallService;
+import com.chatlocal.backend.service.videocall.VideoCallServiceImpl;
 
 import javax.swing.*;
 import java.io.File;
@@ -14,7 +16,9 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -41,6 +45,13 @@ public class ChatServiceImpl implements ChatService, SocketConnection.Connection
     private final List<ChatRoom> rooms = new CopyOnWriteArrayList<>();
     private volatile String activeRoomId = "general";
 
+    // Historiales de conversación por sala ("room_<id>") o chat privado ("private_<usuario>")
+    private final Map<String, List<ChatMessage>> conversationHistories = new ConcurrentHashMap<>();
+    private final Map<SocketConnection, UserProfile> connectionProfiles = new ConcurrentHashMap<>();
+    private volatile String activeConversationId = "room_general";
+    private volatile UserProfile activePrivateUser = null;
+    private volatile String chatWallpaperPath = null;
+
     // Grabador de voz
     private final AudioRecorderService audioRecorder = new AudioRecorderService();
 
@@ -54,9 +65,57 @@ public class ChatServiceImpl implements ChatService, SocketConnection.Connection
     private Thread connectionWorker;
     private final AtomicBoolean pongReceived = new AtomicBoolean(false);
 
+    private final VideoCallServiceImpl videoCallService;
+
     public ChatServiceImpl() {
         // Inicializar sala general por defecto
         rooms.add(ChatRoom.createDefaultGeneralRoom());
+
+        this.videoCallService = new VideoCallServiceImpl(localUserProfile, new VideoCallServiceImpl.CallSignalingHandler() {
+            @Override
+            public void sendCallRequest(String callerName, int mediaPort) throws IOException {
+                if (currentRole == ConnectionRole.HOST) {
+                    for (SocketConnection conn : clientConnections) {
+                        if (conn.isConnected()) conn.sendCallRequest(callerName, mediaPort);
+                    }
+                } else if (clientToServerConnection != null && clientToServerConnection.isConnected()) {
+                    clientToServerConnection.sendCallRequest(callerName, mediaPort);
+                }
+            }
+
+            @Override
+            public void sendCallAccept(String acceptorName, int mediaPort) throws IOException {
+                if (currentRole == ConnectionRole.HOST) {
+                    for (SocketConnection conn : clientConnections) {
+                        if (conn.isConnected()) conn.sendCallAccept(acceptorName, mediaPort);
+                    }
+                } else if (clientToServerConnection != null && clientToServerConnection.isConnected()) {
+                    clientToServerConnection.sendCallAccept(acceptorName, mediaPort);
+                }
+            }
+
+            @Override
+            public void sendCallReject(String reason) throws IOException {
+                if (currentRole == ConnectionRole.HOST) {
+                    for (SocketConnection conn : clientConnections) {
+                        if (conn.isConnected()) conn.sendCallReject(reason);
+                    }
+                } else if (clientToServerConnection != null && clientToServerConnection.isConnected()) {
+                    clientToServerConnection.sendCallReject(reason);
+                }
+            }
+
+            @Override
+            public void sendCallEnd(String reason) throws IOException {
+                if (currentRole == ConnectionRole.HOST) {
+                    for (SocketConnection conn : clientConnections) {
+                        if (conn.isConnected()) conn.sendCallEnd(reason);
+                    }
+                } else if (clientToServerConnection != null && clientToServerConnection.isConnected()) {
+                    clientToServerConnection.sendCallEnd(reason);
+                }
+            }
+        });
     }
 
     @Override
@@ -107,9 +166,63 @@ public class ChatServiceImpl implements ChatService, SocketConnection.Connection
     public void setActiveRoom(String roomId) {
         if (roomId != null) {
             this.activeRoomId = roomId;
+            this.activePrivateUser = null;
+            this.activeConversationId = "room_" + roomId;
             ChatRoom room = getActiveRoom();
             if (room != null) room.resetUnread();
         }
+    }
+
+    @Override
+    public String getActiveConversationId() {
+        return activeConversationId;
+    }
+
+    @Override
+    public void setActiveConversation(String conversationId, String displayName) {
+        if (conversationId != null) {
+            this.activeConversationId = conversationId;
+            if (conversationId.startsWith("room_")) {
+                this.activeRoomId = conversationId.substring("room_".length());
+                this.activePrivateUser = null;
+            }
+        }
+    }
+
+    @Override
+    public void setActivePrivateUser(UserProfile user) {
+        this.activePrivateUser = user;
+        if (user != null) {
+            this.activeConversationId = "private_" + user.getUsername();
+        } else {
+            this.activeConversationId = "room_" + activeRoomId;
+        }
+    }
+
+    @Override
+    public UserProfile getActivePrivateUser() {
+        return activePrivateUser;
+    }
+
+    @Override
+    public List<ChatMessage> getConversationMessages(String conversationId) {
+        List<ChatMessage> list = conversationHistories.get(conversationId);
+        return list != null ? new ArrayList<>(list) : new ArrayList<>();
+    }
+
+    public void storeMessage(String conversationId, ChatMessage msg) {
+        if (conversationId == null || msg == null) return;
+        conversationHistories.computeIfAbsent(conversationId, k -> new CopyOnWriteArrayList<>()).add(msg);
+    }
+
+    @Override
+    public String getChatWallpaperPath() {
+        return chatWallpaperPath;
+    }
+
+    @Override
+    public void setChatWallpaperPath(String path) {
+        this.chatWallpaperPath = path;
     }
 
     // --- Bloqueo de Contactos ---
@@ -187,24 +300,39 @@ public class ChatServiceImpl implements ChatService, SocketConnection.Connection
         int clientPort = socket.getPort();
 
         try {
+            UserProfile newUser = new UserProfile(clientIp, ConnectionRole.CLIENT, clientIp, clientPort);
+            connectedUsers.add(newUser);
+
             SocketConnection conn = new SocketConnection(socket, new SocketConnection.ConnectionCallback() {
                 @Override
                 public void onTextMessageReceived(ChatMessage message) {
                     if (isUserBlocked(message.getSender())) return;
-                    notifyMessageReceived(message);
-                    broadcastMessage(message, socket);
+                    handleIncomingMessageHost(message, socket);
                 }
 
                 @Override
                 public void onFileReceived(ChatMessage message) {
                     if (isUserBlocked(message.getSender())) return;
-                    notifyFileReceived(message);
+                    handleIncomingFileHost(message, socket);
                 }
 
                 @Override
                 public void onAudioReceived(ChatMessage message) {
                     if (isUserBlocked(message.getSender())) return;
-                    notifyAudioReceived(message);
+                    handleIncomingAudioHost(message, socket);
+                }
+
+                @Override
+                public void onAckReceived(String messageId) {
+                    handleAck(messageId);
+                }
+
+                @Override
+                public void onHandshakeReceived(String username, int colorHex, String avatarPath) {
+                    newUser.setUsername(username);
+                    newUser.setAvatarColorHex(colorHex);
+                    newUser.setAvatarImagePath(avatarPath);
+                    updateState(currentState, "Usuario conectado: " + username + " (" + clientIp + ")");
                 }
 
                 @Override
@@ -213,27 +341,55 @@ public class ChatServiceImpl implements ChatService, SocketConnection.Connection
                 }
 
                 @Override
+                public void onCallRequestReceived(String callerName, String peerIp, int mediaPort) {
+                    if (isUserBlocked(callerName)) return;
+                    videoCallService.handleIncomingCall(callerName, peerIp, mediaPort);
+                }
+
+                @Override
+                public void onCallAcceptReceived(String acceptorName, String peerIp, int mediaPort) {
+                    videoCallService.handleCallAccepted(acceptorName, peerIp, mediaPort);
+                }
+
+                @Override
+                public void onCallRejectReceived(String reason) {
+                    videoCallService.handleCallRejected(reason);
+                }
+
+                @Override
+                public void onCallEndReceived(String reason) {
+                    videoCallService.handleCallEnded(reason);
+                }
+
+                @Override
                 public void onConnectionLost(String reason) {
                     clientConnections.removeIf(c -> c.getSocket() == socket);
-                    connectedUsers.removeIf(u -> u.getIpAddress().equals(clientIp) && u.getPort() == clientPort);
-                    updateState(currentState, "Un usuario se ha desconectado (" + clientIp + ")");
+                    connectedUsers.remove(newUser);
+                    for (Map.Entry<SocketConnection, UserProfile> e : connectionProfiles.entrySet()) {
+                        if (e.getKey().getSocket() == socket) {
+                            connectionProfiles.remove(e.getKey());
+                            break;
+                        }
+                    }
+                    updateState(currentState, "Usuario desconectado (" + clientIp + ")");
                 }
             });
 
             clientConnections.add(conn);
+            connectionProfiles.put(conn, newUser);
             peerAddress = clientIp;
 
-            // Registrar usuario detectado
-            UserProfile newUser = new UserProfile(clientIp + ":" + clientPort, ConnectionRole.CLIENT, clientIp, clientPort);
-            connectedUsers.add(newUser);
+            // Enviar Handshake del Host al Cliente
+            try {
+                conn.sendHandshake(localUserProfile.getUsername(), localUserProfile.getAvatarColorHex(), localUserProfile.getAvatarImagePath());
+            } catch (IOException ignored) {}
 
-            // Enviar Ping de confirmación
             conn.sendPing();
 
             if (currentState != ConnectionState.CONNECTED) {
-                updateState(ConnectionState.CONNECTED, "Cliente conectado desde " + clientIp + ":" + clientPort);
+                updateState(ConnectionState.CONNECTED, "Cliente conectado desde " + clientIp);
             } else {
-                updateState(ConnectionState.CONNECTED, "Nuevo usuario en sala: " + clientIp + " (Total: " + clientConnections.size() + ")");
+                updateState(ConnectionState.CONNECTED, "Nuevo usuario en red: " + clientIp + " (Total: " + clientConnections.size() + ")");
             }
 
         } catch (IOException e) {
@@ -241,11 +397,125 @@ public class ChatServiceImpl implements ChatService, SocketConnection.Connection
         }
     }
 
+    private void handleIncomingMessageHost(ChatMessage message, Socket sourceSocket) {
+        if (message.isPrivate()) {
+            String recipient = message.getRecipient();
+            boolean isForHost = recipient == null || recipient.isEmpty() ||
+                    recipient.equalsIgnoreCase(localUserProfile.getUsername()) ||
+                    recipient.equalsIgnoreCase("Yo") ||
+                    recipient.equalsIgnoreCase("Host");
+
+            if (isForHost) {
+                String convKey = "private_" + message.getSender();
+                storeMessage(convKey, message);
+                if (activeConversationId.equals(convKey)) {
+                    notifyMessageReceived(message);
+                }
+            } else {
+                // Reenviar exclusivamente al cliente destino
+                for (Map.Entry<SocketConnection, UserProfile> entry : connectionProfiles.entrySet()) {
+                    if (entry.getValue() != null && entry.getValue().getUsername().equalsIgnoreCase(recipient)) {
+                        try {
+                            entry.getKey().sendTextMessage(message.getId(), message.getSender(), message.getSenderColorHex(),
+                                    message.getContent(), message.getRoomId(), message.getRecipient(), message.getSenderAvatarPath());
+                        } catch (IOException ignored) {}
+                        break;
+                    }
+                }
+            }
+        } else {
+            String convKey = "room_" + message.getRoomId();
+            storeMessage(convKey, message);
+            if (activeConversationId.equals(convKey)) {
+                notifyMessageReceived(message);
+            }
+            broadcastMessage(message, sourceSocket);
+        }
+    }
+
+    private void handleIncomingFileHost(ChatMessage message, Socket sourceSocket) {
+        if (message.isPrivate()) {
+            String recipient = message.getRecipient();
+            boolean isForHost = recipient == null || recipient.isEmpty() ||
+                    recipient.equalsIgnoreCase(localUserProfile.getUsername()) ||
+                    recipient.equalsIgnoreCase("Yo") ||
+                    recipient.equalsIgnoreCase("Host");
+
+            if (isForHost) {
+                String convKey = "private_" + message.getSender();
+                storeMessage(convKey, message);
+                if (activeConversationId.equals(convKey)) {
+                    notifyFileReceived(message);
+                }
+            }
+        } else {
+            String convKey = "room_" + message.getRoomId();
+            storeMessage(convKey, message);
+            if (activeConversationId.equals(convKey)) {
+                notifyFileReceived(message);
+            }
+        }
+    }
+
+    private void handleIncomingAudioHost(ChatMessage message, Socket sourceSocket) {
+        if (message.isPrivate()) {
+            String recipient = message.getRecipient();
+            boolean isForHost = recipient == null || recipient.isEmpty() ||
+                    recipient.equalsIgnoreCase(localUserProfile.getUsername()) ||
+                    recipient.equalsIgnoreCase("Yo") ||
+                    recipient.equalsIgnoreCase("Host");
+
+            if (isForHost) {
+                String convKey = "private_" + message.getSender();
+                storeMessage(convKey, message);
+                if (activeConversationId.equals(convKey)) {
+                    notifyAudioReceived(message);
+                }
+            }
+        } else {
+            String convKey = "room_" + message.getRoomId();
+            storeMessage(convKey, message);
+            if (activeConversationId.equals(convKey)) {
+                notifyAudioReceived(message);
+            }
+        }
+    }
+
+    private void handleAck(String messageId) {
+        if (messageId == null || messageId.isEmpty()) return;
+        for (List<ChatMessage> list : conversationHistories.values()) {
+            for (ChatMessage m : list) {
+                if (messageId.equals(m.getId())) {
+                    m.setStatus(MessageStatus.DELIVERED);
+                    SwingUtilities.invokeLater(() -> {
+                        for (MessageListener listener : messageListeners) {
+                            listener.onMessageStatusChanged(messageId, MessageStatus.DELIVERED);
+                        }
+                    });
+                    return;
+                }
+            }
+        }
+    }
+
+    private SocketConnection findConnectionForUser(UserProfile target) {
+        if (target == null) return null;
+        for (Map.Entry<SocketConnection, UserProfile> entry : connectionProfiles.entrySet()) {
+            UserProfile u = entry.getValue();
+            if (u != null && (u.getUsername().equalsIgnoreCase(target.getUsername()) ||
+                    (u.getIpAddress().equals(target.getIpAddress()) && u.getPort() == target.getPort()))) {
+                return entry.getKey();
+            }
+        }
+        return null;
+    }
+
     private void broadcastMessage(ChatMessage message, Socket excludeSocket) {
         for (SocketConnection conn : clientConnections) {
             if (conn.isConnected() && conn.getSocket() != excludeSocket) {
                 try {
-                    conn.sendTextMessage(message.getSender(), message.getSenderColorHex(), message.getContent());
+                    conn.sendTextMessage(message.getId(), message.getSender(), message.getSenderColorHex(),
+                            message.getContent(), message.getRoomId(), "", message.getSenderAvatarPath());
                 } catch (IOException ignored) {}
             }
         }
@@ -269,6 +539,12 @@ public class ChatServiceImpl implements ChatService, SocketConnection.Connection
                 updateState(ConnectionState.VERIFYING, "Conectado. Verificando canal de comunicación...");
 
                 clientToServerConnection = new SocketConnection(clientSocket, this);
+
+                // Enviar Handshake inicial con perfil local
+                try {
+                    clientToServerConnection.sendHandshake(localUserProfile.getUsername(), localUserProfile.getAvatarColorHex(), localUserProfile.getAvatarImagePath());
+                } catch (IOException ignored) {}
+
                 clientToServerConnection.sendPing();
 
                 long deadline = System.currentTimeMillis() + ProtocolConstants.PING_TIMEOUT_MS;
@@ -298,23 +574,47 @@ public class ChatServiceImpl implements ChatService, SocketConnection.Connection
     public void sendTextMessage(String text) throws IOException {
         String sender = (localUserProfile != null) ? localUserProfile.getUsername() : "Yo";
         int color = (localUserProfile != null) ? localUserProfile.getAvatarColorHex() : 0x6366F1;
-        ChatMessage msg = ChatMessage.createTextMessage(sender, color, text, true, activeRoomId);
+        String avatarPath = (localUserProfile != null) ? localUserProfile.getAvatarImagePath() : "";
+        String msgId = UUID.randomUUID().toString();
 
-        if (currentRole == ConnectionRole.HOST) {
-            if (clientConnections.isEmpty()) {
-                throw new IOException("No hay usuarios conectados en la sala actualmente.");
-            }
-            for (SocketConnection conn : clientConnections) {
-                if (conn.isConnected()) {
-                    conn.sendTextMessage(sender, color, text);
+        if (activePrivateUser != null) {
+            String recipient = activePrivateUser.getUsername();
+            ChatMessage msg = new ChatMessage(msgId, sender, color, text, MessageType.TEXT, true, null, 0, null, 0, "private", avatarPath, recipient);
+            storeMessage("private_" + recipient, msg);
+
+            if (currentRole == ConnectionRole.HOST) {
+                SocketConnection conn = findConnectionForUser(activePrivateUser);
+                if (conn != null && conn.isConnected()) {
+                    conn.sendTextMessage(msgId, sender, color, text, "private", recipient, avatarPath);
+                } else {
+                    throw new IOException("El usuario " + recipient + " no está conectado.");
                 }
+            } else {
+                if (clientToServerConnection == null || !clientToServerConnection.isConnected()) {
+                    throw new IOException("No hay conexión con el servidor.");
+                }
+                clientToServerConnection.sendTextMessage(msgId, sender, color, text, "private", recipient, avatarPath);
             }
             notifyMessageSent(msg);
         } else {
-            if (clientToServerConnection == null || !clientToServerConnection.isConnected()) {
-                throw new IOException("No hay conexión con el servidor.");
+            ChatMessage msg = new ChatMessage(msgId, sender, color, text, MessageType.TEXT, true, null, 0, null, 0, activeRoomId, avatarPath, null);
+            storeMessage("room_" + activeRoomId, msg);
+
+            if (currentRole == ConnectionRole.HOST) {
+                if (clientConnections.isEmpty()) {
+                    throw new IOException("No hay otros usuarios en la sala actualmente.");
+                }
+                for (SocketConnection conn : clientConnections) {
+                    if (conn.isConnected()) {
+                        conn.sendTextMessage(msgId, sender, color, text, activeRoomId, "", avatarPath);
+                    }
+                }
+            } else {
+                if (clientToServerConnection == null || !clientToServerConnection.isConnected()) {
+                    throw new IOException("No hay conexión con el servidor.");
+                }
+                clientToServerConnection.sendTextMessage(msgId, sender, color, text, activeRoomId, "", avatarPath);
             }
-            clientToServerConnection.sendTextMessage(sender, color, text);
             notifyMessageSent(msg);
         }
     }
@@ -323,20 +623,44 @@ public class ChatServiceImpl implements ChatService, SocketConnection.Connection
     public void sendAudioMessage(File audioFile, int durationSeconds) throws IOException {
         String sender = (localUserProfile != null) ? localUserProfile.getUsername() : "Yo";
         int color = (localUserProfile != null) ? localUserProfile.getAvatarColorHex() : 0x6366F1;
-        ChatMessage msg = ChatMessage.createAudioMessage(sender, color, audioFile.getAbsolutePath(), durationSeconds, true, activeRoomId);
+        String avatarPath = (localUserProfile != null) ? localUserProfile.getAvatarImagePath() : "";
+        String msgId = UUID.randomUUID().toString();
 
-        if (currentRole == ConnectionRole.HOST) {
-            for (SocketConnection conn : clientConnections) {
-                if (conn.isConnected()) {
-                    conn.sendAudio(sender, color, audioFile, durationSeconds);
+        if (activePrivateUser != null) {
+            String recipient = activePrivateUser.getUsername();
+            ChatMessage msg = new ChatMessage(msgId, sender, color, "Nota de voz (" + durationSeconds + "s)", MessageType.AUDIO, true, "audio_nota.wav", 0, audioFile.getAbsolutePath(), durationSeconds, "private", avatarPath, recipient);
+            storeMessage("private_" + recipient, msg);
+
+            if (currentRole == ConnectionRole.HOST) {
+                SocketConnection conn = findConnectionForUser(activePrivateUser);
+                if (conn != null && conn.isConnected()) {
+                    conn.sendAudio(msgId, sender, color, audioFile, durationSeconds, "private", recipient, avatarPath);
+                } else {
+                    throw new IOException("El usuario " + recipient + " no está conectado.");
                 }
+            } else {
+                if (clientToServerConnection == null || !clientToServerConnection.isConnected()) {
+                    throw new IOException("No hay conexión con el servidor.");
+                }
+                clientToServerConnection.sendAudio(msgId, sender, color, audioFile, durationSeconds, "private", recipient, avatarPath);
             }
             notifyMessageSent(msg);
         } else {
-            if (clientToServerConnection == null || !clientToServerConnection.isConnected()) {
-                throw new IOException("No hay conexión con el servidor.");
+            ChatMessage msg = new ChatMessage(msgId, sender, color, "Nota de voz (" + durationSeconds + "s)", MessageType.AUDIO, true, "audio_nota.wav", 0, audioFile.getAbsolutePath(), durationSeconds, activeRoomId, avatarPath, null);
+            storeMessage("room_" + activeRoomId, msg);
+
+            if (currentRole == ConnectionRole.HOST) {
+                for (SocketConnection conn : clientConnections) {
+                    if (conn.isConnected()) {
+                        conn.sendAudio(msgId, sender, color, audioFile, durationSeconds, activeRoomId, "", avatarPath);
+                    }
+                }
+            } else {
+                if (clientToServerConnection == null || !clientToServerConnection.isConnected()) {
+                    throw new IOException("No hay conexión con el servidor.");
+                }
+                clientToServerConnection.sendAudio(msgId, sender, color, audioFile, durationSeconds, activeRoomId, "", avatarPath);
             }
-            clientToServerConnection.sendAudio(sender, color, audioFile, durationSeconds);
             notifyMessageSent(msg);
         }
     }
@@ -345,20 +669,44 @@ public class ChatServiceImpl implements ChatService, SocketConnection.Connection
     public void sendStickerMessage(String stickerText) throws IOException {
         String sender = (localUserProfile != null) ? localUserProfile.getUsername() : "Yo";
         int color = (localUserProfile != null) ? localUserProfile.getAvatarColorHex() : 0x6366F1;
-        ChatMessage msg = ChatMessage.createStickerMessage(sender, color, stickerText, true, activeRoomId);
+        String avatarPath = (localUserProfile != null) ? localUserProfile.getAvatarImagePath() : "";
+        String msgId = UUID.randomUUID().toString();
 
-        if (currentRole == ConnectionRole.HOST) {
-            for (SocketConnection conn : clientConnections) {
-                if (conn.isConnected()) {
-                    conn.sendSticker(sender, color, stickerText);
+        if (activePrivateUser != null) {
+            String recipient = activePrivateUser.getUsername();
+            ChatMessage msg = new ChatMessage(msgId, sender, color, stickerText, MessageType.STICKER, true, null, 0, null, 0, "private", avatarPath, recipient);
+            storeMessage("private_" + recipient, msg);
+
+            if (currentRole == ConnectionRole.HOST) {
+                SocketConnection conn = findConnectionForUser(activePrivateUser);
+                if (conn != null && conn.isConnected()) {
+                    conn.sendSticker(msgId, sender, color, stickerText, "private", recipient, avatarPath);
+                } else {
+                    throw new IOException("El usuario " + recipient + " no está conectado.");
                 }
+            } else {
+                if (clientToServerConnection == null || !clientToServerConnection.isConnected()) {
+                    throw new IOException("No hay conexión con el servidor.");
+                }
+                clientToServerConnection.sendSticker(msgId, sender, color, stickerText, "private", recipient, avatarPath);
             }
             notifyMessageSent(msg);
         } else {
-            if (clientToServerConnection == null || !clientToServerConnection.isConnected()) {
-                throw new IOException("No hay conexión con el servidor.");
+            ChatMessage msg = new ChatMessage(msgId, sender, color, stickerText, MessageType.STICKER, true, null, 0, null, 0, activeRoomId, avatarPath, null);
+            storeMessage("room_" + activeRoomId, msg);
+
+            if (currentRole == ConnectionRole.HOST) {
+                for (SocketConnection conn : clientConnections) {
+                    if (conn.isConnected()) {
+                        conn.sendSticker(msgId, sender, color, stickerText, activeRoomId, "", avatarPath);
+                    }
+                }
+            } else {
+                if (clientToServerConnection == null || !clientToServerConnection.isConnected()) {
+                    throw new IOException("No hay conexión con el servidor.");
+                }
+                clientToServerConnection.sendSticker(msgId, sender, color, stickerText, activeRoomId, "", avatarPath);
             }
-            clientToServerConnection.sendSticker(sender, color, stickerText);
             notifyMessageSent(msg);
         }
     }
@@ -367,26 +715,53 @@ public class ChatServiceImpl implements ChatService, SocketConnection.Connection
     public void sendFile(File file) throws IOException {
         String sender = (localUserProfile != null) ? localUserProfile.getUsername() : "Yo";
         int color = (localUserProfile != null) ? localUserProfile.getAvatarColorHex() : 0x6366F1;
-        ChatMessage msg = ChatMessage.createFileMessage(sender, color, file.getName(), file.length(), file.getAbsolutePath(), true, activeRoomId);
+        String avatarPath = (localUserProfile != null) ? localUserProfile.getAvatarImagePath() : "";
+        String msgId = UUID.randomUUID().toString();
 
-        if (currentRole == ConnectionRole.HOST) {
-            for (SocketConnection conn : clientConnections) {
-                if (conn.isConnected()) {
-                    conn.sendFile(sender, color, file);
+        if (activePrivateUser != null) {
+            String recipient = activePrivateUser.getUsername();
+            ChatMessage msg = new ChatMessage(msgId, sender, color, "Has enviado un archivo", MessageType.FILE, true, file.getName(), file.length(), file.getAbsolutePath(), 0, "private", avatarPath, recipient);
+            storeMessage("private_" + recipient, msg);
+
+            if (currentRole == ConnectionRole.HOST) {
+                SocketConnection conn = findConnectionForUser(activePrivateUser);
+                if (conn != null && conn.isConnected()) {
+                    conn.sendFile(msgId, sender, color, file, "private", recipient, avatarPath);
+                } else {
+                    throw new IOException("El usuario " + recipient + " no está conectado.");
                 }
+            } else {
+                if (clientToServerConnection == null || !clientToServerConnection.isConnected()) {
+                    throw new IOException("No hay conexión con el servidor.");
+                }
+                clientToServerConnection.sendFile(msgId, sender, color, file, "private", recipient, avatarPath);
             }
             notifyMessageSent(msg);
         } else {
-            if (clientToServerConnection == null || !clientToServerConnection.isConnected()) {
-                throw new IOException("No hay conexión con el servidor.");
+            ChatMessage msg = new ChatMessage(msgId, sender, color, "Has enviado un archivo", MessageType.FILE, true, file.getName(), file.length(), file.getAbsolutePath(), 0, activeRoomId, avatarPath, null);
+            storeMessage("room_" + activeRoomId, msg);
+
+            if (currentRole == ConnectionRole.HOST) {
+                for (SocketConnection conn : clientConnections) {
+                    if (conn.isConnected()) {
+                        conn.sendFile(msgId, sender, color, file, activeRoomId, "", avatarPath);
+                    }
+                }
+            } else {
+                if (clientToServerConnection == null || !clientToServerConnection.isConnected()) {
+                    throw new IOException("No hay conexión con el servidor.");
+                }
+                clientToServerConnection.sendFile(msgId, sender, color, file, activeRoomId, "", avatarPath);
             }
-            clientToServerConnection.sendFile(sender, color, file);
             notifyMessageSent(msg);
         }
     }
 
     @Override
     public synchronized void disconnect() {
+        if (videoCallService != null) {
+            videoCallService.endCall();
+        }
         if (connectionWorker != null && connectionWorker.isAlive()) {
             connectionWorker.interrupt();
         }
@@ -471,24 +846,72 @@ public class ChatServiceImpl implements ChatService, SocketConnection.Connection
     @Override
     public void onTextMessageReceived(ChatMessage message) {
         if (isUserBlocked(message.getSender())) return;
-        notifyMessageReceived(message);
+        String convKey = message.isPrivate() ? ("private_" + message.getSender()) : ("room_" + message.getRoomId());
+        storeMessage(convKey, message);
+        if (activeConversationId.equals(convKey)) {
+            notifyMessageReceived(message);
+        }
     }
 
     @Override
     public void onFileReceived(ChatMessage message) {
         if (isUserBlocked(message.getSender())) return;
-        notifyFileReceived(message);
+        String convKey = message.isPrivate() ? ("private_" + message.getSender()) : ("room_" + message.getRoomId());
+        storeMessage(convKey, message);
+        if (activeConversationId.equals(convKey)) {
+            notifyFileReceived(message);
+        }
     }
 
     @Override
     public void onAudioReceived(ChatMessage message) {
         if (isUserBlocked(message.getSender())) return;
-        notifyAudioReceived(message);
+        String convKey = message.isPrivate() ? ("private_" + message.getSender()) : ("room_" + message.getRoomId());
+        storeMessage(convKey, message);
+        if (activeConversationId.equals(convKey)) {
+            notifyAudioReceived(message);
+        }
+    }
+
+    @Override
+    public void onAckReceived(String messageId) {
+        handleAck(messageId);
+    }
+
+    @Override
+    public void onHandshakeReceived(String username, int colorHex, String avatarPath) {
+        UserProfile hostProfile = new UserProfile(username, ConnectionRole.HOST, peerAddress, activePort);
+        hostProfile.setAvatarColorHex(colorHex);
+        hostProfile.setAvatarImagePath(avatarPath);
+        connectedUsers.removeIf(u -> u.getRole() == ConnectionRole.HOST);
+        connectedUsers.add(0, hostProfile);
+        updateState(currentState, "Conectado con " + username);
     }
 
     @Override
     public void onPongReceived() {
         pongReceived.set(true);
+    }
+
+    @Override
+    public void onCallRequestReceived(String callerName, String peerIp, int mediaPort) {
+        if (isUserBlocked(callerName)) return;
+        videoCallService.handleIncomingCall(callerName, peerIp, mediaPort);
+    }
+
+    @Override
+    public void onCallAcceptReceived(String acceptorName, String peerIp, int mediaPort) {
+        videoCallService.handleCallAccepted(acceptorName, peerIp, mediaPort);
+    }
+
+    @Override
+    public void onCallRejectReceived(String reason) {
+        videoCallService.handleCallRejected(reason);
+    }
+
+    @Override
+    public void onCallEndReceived(String reason) {
+        videoCallService.handleCallEnded(reason);
     }
 
     @Override
@@ -536,5 +959,29 @@ public class ChatServiceImpl implements ChatService, SocketConnection.Connection
     @Override
     public void removeMessageListener(MessageListener listener) {
         messageListeners.remove(listener);
+    }
+
+    // --- Soporte de Videollamada ---
+
+    @Override
+    public VideoCallService getVideoCallService() {
+        return videoCallService;
+    }
+
+    @Override
+    public void initiateVideoCall() {
+        if (currentState != ConnectionState.CONNECTED) {
+            JOptionPane.showMessageDialog(null, "Debes estar conectado a una sala o usuario para iniciar una videollamada.", "Aviso", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+
+        String target = "Contacto";
+        if (!connectedUsers.isEmpty()) {
+            target = connectedUsers.get(0).getUsername();
+        } else if (currentRole == ConnectionRole.CLIENT) {
+            target = "Host (" + peerAddress + ")";
+        }
+
+        videoCallService.initiateCall(target);
     }
 }

@@ -2,6 +2,7 @@ package com.chatlocal.backend.service;
 
 import com.chatlocal.backend.event.ConnectionListener;
 import com.chatlocal.backend.event.MessageListener;
+import com.chatlocal.backend.model.ChatMessage;
 import com.chatlocal.backend.model.ChatRoom;
 import com.chatlocal.backend.model.ConnectionRole;
 import com.chatlocal.backend.model.ConnectionState;
@@ -55,6 +56,22 @@ public interface ChatService {
 
     void setActiveRoom(String roomId);
 
+    // Gestión de Conversaciones e Historiales
+    String getActiveConversationId();
+
+    void setActiveConversation(String conversationId, String displayName);
+
+    void setActivePrivateUser(UserProfile user);
+
+    UserProfile getActivePrivateUser();
+
+    List<ChatMessage> getConversationMessages(String conversationId);
+
+    // Fondo de pantalla del chat (Wallpaper)
+    String getChatWallpaperPath();
+
+    void setChatWallpaperPath(String path);
+
     // Bloqueo de Contactos
     void blockUser(String username);
 
@@ -66,6 +83,11 @@ public interface ChatService {
 
     // Grabador de Audio
     AudioRecorderService getAudioRecorder();
+
+    // Videollamada
+    com.chatlocal.backend.service.videocall.VideoCallService getVideoCallService();
+
+    void initiateVideoCall();
 
     void addConnectionListener(ConnectionListener listener);
 

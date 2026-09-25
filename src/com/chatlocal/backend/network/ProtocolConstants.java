@@ -17,6 +17,10 @@ public final class ProtocolConstants {
     public static final byte TYPE_STICKER = 8;
     public static final byte TYPE_ACK = 9;
     public static final byte TYPE_ROOM_EVENT = 10;
+    public static final byte TYPE_CALL_REQUEST = 11;
+    public static final byte TYPE_CALL_ACCEPT = 12;
+    public static final byte TYPE_CALL_REJECT = 13;
+    public static final byte TYPE_CALL_END = 14;
 
     public static final int DEFAULT_PORT = 5000;
     public static final int BUFFER_SIZE = 8192;

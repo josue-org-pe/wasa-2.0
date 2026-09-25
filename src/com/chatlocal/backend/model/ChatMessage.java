@@ -28,11 +28,19 @@ public class ChatMessage {
     private final long fileSize;
     private final String localFilePath;
     private final int audioDurationSeconds;
+    private String senderAvatarPath = null;
+    private String recipient = null; // null o "general" para sala, o nombre de usuario/IP para privado
 
     public ChatMessage(String sender, int senderColorHex, String content, MessageType type,
                        boolean isSelf, String fileName, long fileSize, String localFilePath,
                        int audioDurationSeconds, String roomId) {
-        this.id = UUID.randomUUID().toString();
+        this(UUID.randomUUID().toString(), sender, senderColorHex, content, type, isSelf, fileName, fileSize, localFilePath, audioDurationSeconds, roomId, null, null);
+    }
+
+    public ChatMessage(String id, String sender, int senderColorHex, String content, MessageType type,
+                       boolean isSelf, String fileName, long fileSize, String localFilePath,
+                       int audioDurationSeconds, String roomId, String senderAvatarPath, String recipient) {
+        this.id = id != null ? id : UUID.randomUUID().toString();
         this.sender = (sender != null && !sender.isEmpty()) ? sender : "Usuario";
         this.senderColorHex = senderColorHex;
         this.content = content != null ? content : "";
@@ -45,6 +53,8 @@ public class ChatMessage {
         this.localFilePath = localFilePath;
         this.audioDurationSeconds = audioDurationSeconds;
         this.roomId = (roomId != null && !roomId.isEmpty()) ? roomId : "general";
+        this.senderAvatarPath = senderAvatarPath;
+        this.recipient = recipient;
     }
 
     public static ChatMessage createTextMessage(String sender, String text, boolean isSelf) {
@@ -131,6 +141,26 @@ public class ChatMessage {
 
     public int getAudioDurationSeconds() {
         return audioDurationSeconds;
+    }
+
+    public String getSenderAvatarPath() {
+        return senderAvatarPath;
+    }
+
+    public void setSenderAvatarPath(String path) {
+        this.senderAvatarPath = path;
+    }
+
+    public String getRecipient() {
+        return recipient;
+    }
+
+    public void setRecipient(String recipient) {
+        this.recipient = recipient;
+    }
+
+    public boolean isPrivate() {
+        return recipient != null && !recipient.isEmpty() && !recipient.equalsIgnoreCase("general");
     }
 
     public String getFormattedAudioDuration() {

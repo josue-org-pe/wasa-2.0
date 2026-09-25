@@ -26,7 +26,9 @@ public class ChatAreaPanel extends JPanel {
         void onSendFile(File file);
         void onSendAudio(File audioFile, int durationSecs);
         void onSendSticker(String sticker);
+        void onStartVideoCall();
         void onDisconnectRequested();
+        void onToggleSidebar();
     }
 
     private final AudioRecorderService audioService;
@@ -39,6 +41,9 @@ public class ChatAreaPanel extends JPanel {
 
     private JPanel messageListPanel;
     private JScrollPane scrollPane;
+    private JPanel feedBackgroundPanel;
+    private Image backgroundImage = null;
+    private final java.util.Map<String, ChatBubblePanel> bubblePanels = new java.util.concurrent.ConcurrentHashMap<>();
 
     private JPanel inputContainer;
     private JPanel standardInputBar;
@@ -76,10 +81,18 @@ public class ChatAreaPanel extends JPanel {
         };
         bar.setOpaque(true);
         bar.setBackground(ThemeManager.getTheme().bgSidebar);
-        bar.setBorder(BorderFactory.createEmptyBorder(12, 20, 12, 20));
+        bar.setBorder(BorderFactory.createEmptyBorder(10, 16, 10, 16));
 
-        JPanel left = new JPanel(new FlowLayout(FlowLayout.LEFT, 12, 0));
+        JPanel left = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 0));
         left.setOpaque(false);
+
+        ModernButton btnToggleSidebar = new ModernButton("", Icons.sidebarToggle(18, Color.WHITE), ModernButton.Variant.GHOST);
+        btnToggleSidebar.setPreferredSize(new Dimension(36, 36));
+        btnToggleSidebar.setToolTipText("Mostrar / Ocultar panel lateral de contactos");
+        btnToggleSidebar.addActionListener(e -> {
+            if (callback != null) callback.onToggleSidebar();
+        });
+        left.add(btnToggleSidebar);
 
         JLabel avatar = new JLabel(Icons.group(24, ThemeManager.getTheme().primary));
         left.add(avatar);
@@ -99,7 +112,7 @@ public class ChatAreaPanel extends JPanel {
         details.add(lblChatSubtitle);
         left.add(details);
 
-        JPanel right = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0));
+        JPanel right = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 0));
         right.setOpaque(false);
 
         // Badge de reunión activa si aplica
@@ -116,16 +129,18 @@ public class ChatAreaPanel extends JPanel {
         statusBadge.setState(ConnectionState.CONNECTED);
         right.add(statusBadge);
 
-        ModernButton btnFolder = new ModernButton("Carpeta", Icons.folder(14, Color.WHITE), ModernButton.Variant.GHOST);
-        btnFolder.setFont(new Font("Segoe UI", Font.PLAIN, 11));
-        btnFolder.setMargin(new Insets(5, 10, 5, 10));
-        btnFolder.setToolTipText("Abrir descargas y audios");
-        btnFolder.addActionListener(e -> FileTransferManager.openReceivedFolder());
-        right.add(btnFolder);
+        ModernButton btnVideoCall = new ModernButton("", Icons.video(16, Color.WHITE), ModernButton.Variant.PRIMARY);
+        btnVideoCall.setPreferredSize(new Dimension(38, 36));
+        btnVideoCall.setToolTipText("Iniciar videollamada");
+        btnVideoCall.addActionListener(e -> {
+            if (callback != null) callback.onStartVideoCall();
+        });
+        right.add(btnVideoCall);
 
-        ModernButton btnExit = new ModernButton("Salir", Icons.power(14, Color.WHITE), ModernButton.Variant.DANGER);
-        btnExit.setFont(new Font("Segoe UI", Font.PLAIN, 11));
-        btnExit.setMargin(new Insets(5, 10, 5, 10));
+        // Nota: El botón btnFolder se ha eliminado por requerimiento de diseño.
+
+        ModernButton btnExit = new ModernButton("", Icons.power(16, Color.WHITE), ModernButton.Variant.DANGER);
+        btnExit.setPreferredSize(new Dimension(38, 36));
         btnExit.setToolTipText("Cerrar sesión");
         btnExit.addActionListener(e -> {
             int confirm = JOptionPane.showConfirmDialog(this, "¿Deseas salir del chat?", "Confirmar", JOptionPane.YES_NO_OPTION);
@@ -140,10 +155,9 @@ public class ChatAreaPanel extends JPanel {
         return bar;
     }
 
-    private JScrollPane createMessageFeed() {
+    private JPanel createMessageFeed() {
         messageListPanel = new JPanel();
-        messageListPanel.setOpaque(true);
-        messageListPanel.setBackground(ThemeManager.getTheme().bgDark);
+        messageListPanel.setOpaque(false);
         messageListPanel.setLayout(new BoxLayout(messageListPanel, BoxLayout.Y_AXIS));
         messageListPanel.setBorder(BorderFactory.createEmptyBorder(14, 18, 14, 18));
 
@@ -156,7 +170,27 @@ public class ChatAreaPanel extends JPanel {
         scrollPane.getVerticalScrollBar().setUI(new ModernScrollBarUI());
         scrollPane.getVerticalScrollBar().setUnitIncrement(16);
 
-        return scrollPane;
+        feedBackgroundPanel = new JPanel(new BorderLayout()) {
+            @Override
+            protected void paintComponent(Graphics g) {
+                super.paintComponent(g);
+                Graphics2D g2 = (Graphics2D) g.create();
+                if (backgroundImage != null) {
+                    g2.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BILINEAR);
+                    g2.drawImage(backgroundImage, 0, 0, getWidth(), getHeight(), this);
+                    g2.setColor(new Color(15, 23, 42, 175)); // Overlay oscuro elegante
+                    g2.fillRect(0, 0, getWidth(), getHeight());
+                } else {
+                    g2.setColor(ThemeManager.getTheme().bgDark);
+                    g2.fillRect(0, 0, getWidth(), getHeight());
+                }
+                g2.dispose();
+            }
+        };
+        feedBackgroundPanel.setOpaque(true);
+        feedBackgroundPanel.add(scrollPane, BorderLayout.CENTER);
+
+        return feedBackgroundPanel;
     }
 
     private JPanel createInputSection() {
@@ -199,8 +233,9 @@ public class ChatAreaPanel extends JPanel {
         leftActions.add(btnAttach);
         leftActions.add(btnEmoji);
 
-        // Campo de texto
+        // Campo de texto con soporte completo de glifos de emojis
         txtInput = new ModernTextField("Escribe un mensaje aquí... (Enter para enviar)", 20);
+        txtInput.setFont(new Font("Segoe UI Emoji", Font.PLAIN, 14));
         txtInput.addActionListener(e -> submitTextMessage());
 
         // Lado derecho: Botón Micrófono (🎙️) y Enviar (➤)
@@ -259,7 +294,11 @@ public class ChatAreaPanel extends JPanel {
         EmojiPickerPopup popup = new EmojiPickerPopup(new EmojiPickerPopup.EmojiCallback() {
             @Override
             public void onEmojiSelected(String emoji) {
-                txtInput.setText(txtInput.getText() + emoji);
+                int pos = txtInput.getCaretPosition();
+                String curr = txtInput.getText();
+                if (pos < 0 || pos > curr.length()) pos = curr.length();
+                txtInput.setText(curr.substring(0, pos) + emoji + curr.substring(pos));
+                txtInput.setCaretPosition(pos + emoji.length());
                 txtInput.requestFocusInWindow();
             }
 
@@ -277,8 +316,20 @@ public class ChatAreaPanel extends JPanel {
         int res = chooser.showOpenDialog(this);
         if (res == JFileChooser.APPROVE_OPTION) {
             File f = chooser.getSelectedFile();
-            if (f != null && f.exists() && callback != null) {
-                callback.onSendFile(f);
+            if (f != null && f.exists()) {
+                com.chatlocal.ui.dialogs.FilePreviewDialog preview = new com.chatlocal.ui.dialogs.FilePreviewDialog(
+                        SwingUtilities.getWindowAncestor(this),
+                        f,
+                        caption -> {
+                            if (callback != null) {
+                                callback.onSendFile(f);
+                                if (caption != null && !caption.trim().isEmpty()) {
+                                    callback.onSendMessage(caption.trim());
+                                }
+                            }
+                        }
+                );
+                preview.setVisible(true);
             }
         }
     }
@@ -301,8 +352,35 @@ public class ChatAreaPanel extends JPanel {
         }
     }
 
+    public void setDirectUserInfo(com.chatlocal.backend.model.UserProfile user) {
+        if (user != null) {
+            lblChatTitle.setText(user.getUsername());
+            lblChatSubtitle.setText("Chat Privado 1-a-1 (" + user.getIpAddress() + ")");
+            btnMeeting.setVisible(false);
+        }
+    }
+
+    public void setBackgroundImage(Image img) {
+        this.backgroundImage = img;
+        if (feedBackgroundPanel != null) feedBackgroundPanel.repaint();
+    }
+
+    public void setBackgroundImagePath(String path) {
+        if (path != null && !path.trim().isEmpty()) {
+            File f = new File(path);
+            if (f.exists()) {
+                this.backgroundImage = new ImageIcon(f.getAbsolutePath()).getImage();
+                if (feedBackgroundPanel != null) feedBackgroundPanel.repaint();
+                return;
+            }
+        }
+        this.backgroundImage = null;
+        if (feedBackgroundPanel != null) feedBackgroundPanel.repaint();
+    }
+
     public void addMessage(ChatMessage message) {
         ChatBubblePanel bubble = new ChatBubblePanel(message, audioService);
+        bubblePanels.put(message.getId(), bubble);
         messageListPanel.add(bubble);
         messageListPanel.add(Box.createVerticalStrut(4));
         messageListPanel.revalidate();
@@ -314,7 +392,15 @@ public class ChatAreaPanel extends JPanel {
         });
     }
 
+    public void updateMessageStatus(String messageId, com.chatlocal.backend.model.MessageStatus status) {
+        ChatBubblePanel bubble = bubblePanels.get(messageId);
+        if (bubble != null) {
+            bubble.repaint();
+        }
+    }
+
     public void clearMessages() {
+        bubblePanels.clear();
         messageListPanel.removeAll();
         messageListPanel.revalidate();
         messageListPanel.repaint();

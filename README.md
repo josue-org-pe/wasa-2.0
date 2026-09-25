@@ -25,6 +25,18 @@ Segunda versión moderna, modular y escalable del sistema de mensajería P2P y c
   3. 🔵 **Ocean Discord**: Azul profundo y slate moderno.
   4. 🔴 **Crimson Velvet**: Tonos borgoña y rubí elegantes.
   5. ☀️ **Solar Light**: Modo claro de alto contraste.
+- **Videollamadas en Tiempo Real (LAN & P2P)**:
+  - Streaming de video de ultra baja latencia con fragmentación UDP MTU-safe y compresión JPEG (~18-20 FPS).
+  - Audio dúplex en vivo sobre UDP con la API nativa `javax.sound.sampled` (16kHz PCM mono).
+  - Fuentes de video dinámicas intercambiables en caliente:
+    - 📹 **Cámara Virtual con Avatar Reactivo**: halo de energía pulsante que reacciona al micrófono, ecualizador gráfico de audio en tiempo real y OSD HUD (`● LIVE`, contador de tiempo, FPS).
+    - 🖥️ **Compartir Pantalla Completa**: captura de escritorio en vivo con `java.awt.Robot` y escalado bilineal sin retardo.
+    - 🚫 **Cámara Apagada**: modo solo audio.
+  - Ventana de videollamada estilo Discord / FaceTime / Google Meet:
+    - Video remoto en vista principal con relación de aspecto preservada.
+    - Miniatura Picture-in-Picture (PiP) local en la esquina superior.
+    - Dock inferior flotante con controles rápidos: Silenciar Micrófono, Apagar Cámara, Compartir Pantalla y Colgar.
+    - Notificación modal de llamada entrante con halo animado y timbre melódico sintético procedural sin dependencias de audio externas.
 - **Herramienta Ping/Pong de Latencia**:
   - Diagnóstico previo de conexión con medición en milisegundos (RTT) e indicador visual de estado.
 - **Gestión de Contactos y Privacidad**:

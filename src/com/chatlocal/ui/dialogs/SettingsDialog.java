@@ -27,6 +27,8 @@ public class SettingsDialog extends JDialog {
     private int selectedColorHex;
     private DefaultListModel<String> blockedListModel;
 
+    private String customAvatarPath;
+
     private static final int[] PALETTE = {
             0x8B5CF6, 0x10B981, 0x3B82F6, 0xF43F5E,
             0xF59E0B, 0x06B6D4, 0xEC4899, 0x14B8A6
@@ -39,8 +41,9 @@ public class SettingsDialog extends JDialog {
 
         UserProfile current = chatService.getLocalUserProfile();
         this.selectedColorHex = current != null ? current.getAvatarColorHex() : 0x8B5CF6;
+        this.customAvatarPath = current != null ? current.getAvatarImagePath() : null;
 
-        setSize(520, 460);
+        setSize(540, 520);
         setLocationRelativeTo(parent);
         setResizable(false);
         getContentPane().setBackground(ThemeManager.getTheme().bgDark);
@@ -113,10 +116,50 @@ public class SettingsDialog extends JDialog {
         panel.add(lblStatus);
         panel.add(Box.createVerticalStrut(4));
         panel.add(txtStatusMessage);
-        panel.add(Box.createVerticalStrut(14));
+        panel.add(Box.createVerticalStrut(12));
+
+        // Foto de Perfil Personalizada
+        JLabel lblPhoto = new JLabel("Foto de Perfil Personalizada:");
+        lblPhoto.setFont(new Font("Segoe UI", Font.BOLD, 12));
+        lblPhoto.setForeground(ThemeManager.getTheme().textPrimary);
+        panel.add(lblPhoto);
+        panel.add(Box.createVerticalStrut(4));
+
+        JPanel photoRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
+        photoRow.setOpaque(false);
+
+        JLabel lblPhotoStatus = new JLabel(customAvatarPath != null ? new File(customAvatarPath).getName() : "Sin imagen seleccionada");
+        lblPhotoStatus.setFont(new Font("Segoe UI", Font.PLAIN, 11));
+        lblPhotoStatus.setForeground(ThemeManager.getTheme().textMuted);
+
+        ModernButton btnUpload = new ModernButton("Subir Imagen", Icons.camera(13, Color.WHITE), ModernButton.Variant.SECONDARY);
+        btnUpload.setFont(new Font("Segoe UI", Font.PLAIN, 11));
+        btnUpload.addActionListener(e -> {
+            JFileChooser chooser = new JFileChooser();
+            chooser.setDialogTitle("Selecciona una foto de perfil");
+            chooser.setFileFilter(new javax.swing.filechooser.FileNameExtensionFilter("Imágenes (JPG, PNG, GIF, WEBP)", "jpg", "jpeg", "png", "gif", "webp"));
+            int res = chooser.showOpenDialog(this);
+            if (res == JFileChooser.APPROVE_OPTION && chooser.getSelectedFile() != null) {
+                customAvatarPath = chooser.getSelectedFile().getAbsolutePath();
+                lblPhotoStatus.setText(chooser.getSelectedFile().getName());
+            }
+        });
+
+        ModernButton btnRemovePhoto = new ModernButton("Quitar", ModernButton.Variant.GHOST);
+        btnRemovePhoto.setFont(new Font("Segoe UI", Font.PLAIN, 11));
+        btnRemovePhoto.addActionListener(e -> {
+            customAvatarPath = null;
+            lblPhotoStatus.setText("Sin imagen (usar iniciales)");
+        });
+
+        photoRow.add(btnUpload);
+        photoRow.add(btnRemovePhoto);
+        photoRow.add(lblPhotoStatus);
+        panel.add(photoRow);
+        panel.add(Box.createVerticalStrut(12));
 
         // Selector de color de avatar
-        JLabel lblColor = new JLabel("Color de Avatar:");
+        JLabel lblColor = new JLabel("Color de Fondo del Avatar:");
         lblColor.setFont(new Font("Segoe UI", Font.BOLD, 12));
         lblColor.setForeground(ThemeManager.getTheme().textPrimary);
         panel.add(lblColor);
@@ -165,7 +208,7 @@ public class SettingsDialog extends JDialog {
         lblTheme.setFont(new Font("Segoe UI", Font.BOLD, 13));
         lblTheme.setForeground(ThemeManager.getTheme().textPrimary);
         panel.add(lblTheme);
-        panel.add(Box.createVerticalStrut(12));
+        panel.add(Box.createVerticalStrut(10));
 
         for (AppTheme theme : ThemeManager.getAvailableThemes()) {
             JPanel row = new JPanel(new BorderLayout(10, 0));
@@ -194,8 +237,50 @@ public class SettingsDialog extends JDialog {
             row.add(btnApply, BorderLayout.EAST);
 
             panel.add(row);
-            panel.add(Box.createVerticalStrut(8));
+            panel.add(Box.createVerticalStrut(6));
         }
+
+        // Fondo del Chat
+        panel.add(Box.createVerticalStrut(10));
+        JLabel lblWallpaper = new JLabel("Fondo de Pantalla del Chat (Wallpaper):");
+        lblWallpaper.setFont(new Font("Segoe UI", Font.BOLD, 13));
+        lblWallpaper.setForeground(ThemeManager.getTheme().textPrimary);
+        panel.add(lblWallpaper);
+        panel.add(Box.createVerticalStrut(6));
+
+        JPanel wallpaperRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
+        wallpaperRow.setOpaque(false);
+
+        JLabel lblWallStatus = new JLabel(chatService.getChatWallpaperPath() != null ? new File(chatService.getChatWallpaperPath()).getName() : "Predeterminado");
+        lblWallStatus.setFont(new Font("Segoe UI", Font.PLAIN, 11));
+        lblWallStatus.setForeground(ThemeManager.getTheme().textMuted);
+
+        ModernButton btnChooseWall = new ModernButton("Elegir Fondo", Icons.attach(13, Color.WHITE), ModernButton.Variant.SECONDARY);
+        btnChooseWall.setFont(new Font("Segoe UI", Font.PLAIN, 11));
+        btnChooseWall.addActionListener(e -> {
+            JFileChooser chooser = new JFileChooser();
+            chooser.setDialogTitle("Seleccionar Imagen de Fondo para el Chat");
+            chooser.setFileFilter(new javax.swing.filechooser.FileNameExtensionFilter("Imágenes (JPG, PNG, WEBP)", "jpg", "jpeg", "png", "webp"));
+            int res = chooser.showOpenDialog(this);
+            if (res == JFileChooser.APPROVE_OPTION && chooser.getSelectedFile() != null) {
+                chatService.setChatWallpaperPath(chooser.getSelectedFile().getAbsolutePath());
+                lblWallStatus.setText(chooser.getSelectedFile().getName());
+                if (onSettingsUpdated != null) onSettingsUpdated.run();
+            }
+        });
+
+        ModernButton btnResetWall = new ModernButton("Restablecer", ModernButton.Variant.GHOST);
+        btnResetWall.setFont(new Font("Segoe UI", Font.PLAIN, 11));
+        btnResetWall.addActionListener(e -> {
+            chatService.setChatWallpaperPath(null);
+            lblWallStatus.setText("Predeterminado");
+            if (onSettingsUpdated != null) onSettingsUpdated.run();
+        });
+
+        wallpaperRow.add(btnChooseWall);
+        wallpaperRow.add(btnResetWall);
+        wallpaperRow.add(lblWallStatus);
+        panel.add(wallpaperRow);
 
         return panel;
     }
@@ -276,6 +361,7 @@ public class SettingsDialog extends JDialog {
             profile.setUsername(newName);
             profile.setStatusMessage(txtStatusMessage.getText().trim());
             profile.setAvatarColorHex(selectedColorHex);
+            profile.setAvatarImagePath(customAvatarPath);
         }
 
         dispose();

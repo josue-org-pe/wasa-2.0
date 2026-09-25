@@ -106,7 +106,8 @@ public class SidebarPanel extends JPanel {
         UserProfile profile = chatService.getLocalUserProfile();
 
         lblUserAvatar = new JLabel(Icons.avatar(profile != null ? profile.getUsername() : "U", 38,
-                new Color(profile != null ? profile.getAvatarColorHex() : 0x8B5CF6), Color.WHITE));
+                new Color(profile != null ? profile.getAvatarColorHex() : 0x8B5CF6), Color.WHITE,
+                profile != null ? profile.getAvatarImagePath() : null));
 
         JPanel namePanel = new JPanel(new GridLayout(2, 1, 0, 2));
         namePanel.setOpaque(false);
@@ -173,7 +174,8 @@ public class SidebarPanel extends JPanel {
         if (profile != null) {
             lblUserName.setText(profile.getUsername());
             lblUserStatus.setText(profile.getStatusMessage());
-            lblUserAvatar.setIcon(Icons.avatar(profile.getUsername(), 38, new Color(profile.getAvatarColorHex()), Color.WHITE));
+            lblUserAvatar.setIcon(Icons.avatar(profile.getUsername(), 38,
+                    new Color(profile.getAvatarColorHex()), Color.WHITE, profile.getAvatarImagePath()));
         }
         setBackground(ThemeManager.getTheme().bgSidebar);
         revalidate();
@@ -195,11 +197,12 @@ public class SidebarPanel extends JPanel {
         listContainer.add(roomsHeader);
 
         ChatRoom activeRoom = chatService.getActiveRoom();
+        UserProfile activePrivate = chatService.getActivePrivateUser();
         List<ChatRoom> rooms = chatService.getRooms();
 
         for (ChatRoom room : rooms) {
             if (filterQuery.isEmpty() || room.getName().toLowerCase().contains(filterQuery)) {
-                boolean isSelected = activeRoom != null && activeRoom.getId().equals(room.getId());
+                boolean isSelected = (activePrivate == null) && activeRoom != null && activeRoom.getId().equals(room.getId());
                 ContactListItem item = new ContactListItem(room, isSelected, new ContactListItem.ContactActionCallback() {
                     @Override
                     public void onSelected() {
@@ -230,9 +233,14 @@ public class SidebarPanel extends JPanel {
         } else {
             for (UserProfile user : users) {
                 if (filterQuery.isEmpty() || user.getUsername().toLowerCase().contains(filterQuery)) {
-                    ContactListItem item = new ContactListItem(user, false, new ContactListItem.ContactActionCallback() {
+                    boolean isPrivateSelected = (activePrivate != null) &&
+                            activePrivate.getUsername().equalsIgnoreCase(user.getUsername());
+
+                    ContactListItem item = new ContactListItem(user, isPrivateSelected, new ContactListItem.ContactActionCallback() {
                         @Override
                         public void onSelected() {
+                            chatService.setActivePrivateUser(user);
+                            refresh();
                             if (callback != null) callback.onUserSelected(user);
                         }
                         @Override

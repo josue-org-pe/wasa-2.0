@@ -17,6 +17,7 @@ public class ModernButton extends JButton {
         PRIMARY,
         SECONDARY,
         DANGER,
+        SUCCESS,
         GHOST
     }
 
@@ -101,6 +102,10 @@ public class ModernButton extends JButton {
                 case DANGER -> {
                     bg = isPressed ? new Color(0xB9, 0x1C, 0x1C) : (isHovered ? Theme.DANGER_HOVER : Theme.DANGER);
                     fg = Theme.TEXT_PRIMARY;
+                }
+                case SUCCESS -> {
+                    bg = isPressed ? new Color(0x04, 0x78, 0x57) : (isHovered ? new Color(0x05, 0x96, 0x69) : Theme.SUCCESS);
+                    fg = Color.WHITE;
                 }
                 case GHOST -> {
                     bg = isPressed ? new Color(0x33, 0x37, 0x46) : (isHovered ? new Color(0x26, 0x2A, 0x36) : new Color(0, 0, 0, 0));

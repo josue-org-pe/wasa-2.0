@@ -122,9 +122,9 @@ public class ChatBubblePanel extends JPanel {
         JPanel rowPanel = new JPanel(new BorderLayout(8, 0));
         rowPanel.setOpaque(false);
 
-        // Avatar del contacto con su color distintivo
+        // Avatar del contacto con su color distintivo y foto si tiene
         Color avatarBg = new Color(message.getSenderColorHex());
-        JLabel avatarLabel = new JLabel(Icons.avatar(message.getSender(), 34, avatarBg, Color.WHITE));
+        JLabel avatarLabel = new JLabel(Icons.avatar(message.getSender(), 34, avatarBg, Color.WHITE, message.getSenderAvatarPath()));
         avatarLabel.setVerticalAlignment(SwingConstants.TOP);
         rowPanel.add(avatarLabel, BorderLayout.WEST);
 
@@ -177,7 +177,7 @@ public class ChatBubblePanel extends JPanel {
 
     private JComponent createTextWidget(boolean isSelf) {
         JTextArea area = new JTextArea(message.getContent());
-        area.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+        area.setFont(new Font("Segoe UI Emoji", Font.PLAIN, 13));
         area.setForeground(isSelf ? Color.WHITE : ThemeManager.getTheme().textPrimary);
         area.setOpaque(false);
         area.setEditable(false);
@@ -215,16 +215,17 @@ public class ChatBubblePanel extends JPanel {
         btnPlayAudio.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
 
         btnPlayAudio.addActionListener(e -> {
-            if (audioService == null || message.getLocalFilePath() == null) return;
+            if (message.getLocalFilePath() == null) return;
             File audioFile = new File(message.getLocalFilePath());
+            AudioRecorderService svc = (audioService != null) ? audioService : new AudioRecorderService();
             if (isAudioPlaying) {
-                audioService.stopPlayback();
+                svc.stopPlayback();
                 isAudioPlaying = false;
                 btnPlayAudio.setIcon(Icons.play(16, isSelf ? Color.WHITE : ThemeManager.getTheme().primary));
             } else {
                 isAudioPlaying = true;
                 btnPlayAudio.setIcon(Icons.pause(16, isSelf ? Color.WHITE : ThemeManager.getTheme().primary));
-                audioService.play(audioFile, () -> {
+                svc.play(audioFile, () -> {
                     isAudioPlaying = false;
                     btnPlayAudio.setIcon(Icons.play(16, isSelf ? Color.WHITE : ThemeManager.getTheme().primary));
                 });

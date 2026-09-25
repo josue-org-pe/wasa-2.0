@@ -12,4 +12,5 @@ public interface MessageListener {
         onFileReceived(message);
     }
     void onMessageSent(ChatMessage message);
+    default void onMessageStatusChanged(String messageId, com.chatlocal.backend.model.MessageStatus status) {}
 }

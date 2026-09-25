@@ -87,10 +87,22 @@ public class MainMessengerPanel extends JPanel {
             }
 
             @Override
+            public void onStartVideoCall() {
+                chatService.initiateVideoCall();
+            }
+
+            @Override
             public void onDisconnectRequested() {
                 if (disconnectCallback != null) {
                     disconnectCallback.onDisconnectRequested();
                 }
+            }
+
+            @Override
+            public void onToggleSidebar() {
+                sidebarPanel.setVisible(!sidebarPanel.isVisible());
+                revalidate();
+                repaint();
             }
         });
 
@@ -99,16 +111,29 @@ public class MainMessengerPanel extends JPanel {
             @Override
             public void onRoomSelected(ChatRoom room) {
                 chatAreaPanel.setRoomInfo(room);
+                chatAreaPanel.clearMessages();
+                java.util.List<ChatMessage> history = chatService.getConversationMessages("room_" + room.getId());
+                for (ChatMessage m : history) {
+                    chatAreaPanel.addMessage(m);
+                }
             }
 
             @Override
             public void onUserSelected(UserProfile user) {
-                chatAreaPanel.setRoomInfo(new ChatRoom(user.getUsername(), "Mensaje Directo con " + user.getUsername(), "", false, user.getUsername()));
+                chatAreaPanel.setDirectUserInfo(user);
+                chatAreaPanel.clearMessages();
+                java.util.List<ChatMessage> history = chatService.getConversationMessages("private_" + user.getUsername());
+                for (ChatMessage m : history) {
+                    chatAreaPanel.addMessage(m);
+                }
             }
 
             @Override
             public void onSettingsChanged() {
                 setBackground(ThemeManager.getTheme().bgDark);
+                if (chatService.getChatWallpaperPath() != null) {
+                    chatAreaPanel.setBackgroundImagePath(chatService.getChatWallpaperPath());
+                }
                 revalidate();
                 repaint();
             }
@@ -120,6 +145,10 @@ public class MainMessengerPanel extends JPanel {
 
     public void addMessage(ChatMessage message) {
         chatAreaPanel.addMessage(message);
+    }
+
+    public void updateMessageStatus(String messageId, com.chatlocal.backend.model.MessageStatus status) {
+        chatAreaPanel.updateMessageStatus(messageId, status);
     }
 
     public void clearMessages() {

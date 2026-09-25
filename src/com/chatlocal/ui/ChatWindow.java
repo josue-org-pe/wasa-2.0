@@ -7,10 +7,16 @@ import com.chatlocal.backend.model.ConnectionRole;
 import com.chatlocal.backend.model.ConnectionState;
 import com.chatlocal.backend.service.ChatService;
 import com.chatlocal.backend.service.ChatServiceImpl;
+import com.chatlocal.backend.service.videocall.CallState;
+import com.chatlocal.backend.service.videocall.VideoCallListener;
+import com.chatlocal.ui.dialogs.videocall.IncomingCallDialog;
+import com.chatlocal.ui.dialogs.videocall.VideoCallDialog;
 import com.chatlocal.ui.panels.ConnectingPanel;
 import com.chatlocal.ui.panels.LoginPanel;
 import com.chatlocal.ui.panels.MainMessengerPanel;
 import com.chatlocal.ui.theme.ThemeManager;
+
+import java.awt.image.BufferedImage;
 
 import javax.swing.*;
 import java.awt.*;
@@ -21,7 +27,7 @@ import java.awt.event.WindowEvent;
  * Ventana principal de la aplicación.
  * Orquesta la navegación entre Login, pantalla de espera con Ping y la vista principal de mensajería.
  */
-public class ChatWindow extends JFrame implements ConnectionListener, MessageListener {
+public class ChatWindow extends JFrame implements ConnectionListener, MessageListener, VideoCallListener {
 
     private final CardLayout cardLayout = new CardLayout();
     private final JPanel rootPanel = new JPanel(cardLayout);
@@ -31,12 +37,14 @@ public class ChatWindow extends JFrame implements ConnectionListener, MessageLis
     private LoginPanel loginPanel;
     private ConnectingPanel connectingPanel;
     private MainMessengerPanel messengerPanel;
+    private VideoCallDialog activeVideoDialog;
 
     public ChatWindow() {
         super("Pulse LAN Messenger — Salas, Audios y Conexión Directa");
         this.chatService = new ChatServiceImpl();
         this.chatService.addConnectionListener(this);
         this.chatService.addMessageListener(this);
+        this.chatService.getVideoCallService().addListener(this);
 
         initWindow();
         initPanels();
@@ -181,5 +189,60 @@ public class ChatWindow extends JFrame implements ConnectionListener, MessageLis
     @Override
     public void onMessageSent(ChatMessage message) {
         messengerPanel.addMessage(message);
+    }
+
+    @Override
+    public void onMessageStatusChanged(String messageId, com.chatlocal.backend.model.MessageStatus status) {
+        messengerPanel.updateMessageStatus(messageId, status);
+    }
+
+    // --- Implementación de VideoCallListener ---
+
+    private void openVideoCallDialog(String peerName) {
+        if (activeVideoDialog != null && activeVideoDialog.isShowing()) return;
+        activeVideoDialog = new VideoCallDialog(this, chatService.getVideoCallService(), peerName);
+        activeVideoDialog.setVisible(true);
+    }
+
+    @Override
+    public void onCallStateChanged(CallState newState, String peerName, String message) {
+        SwingUtilities.invokeLater(() -> {
+            if (newState == CallState.OUTGOING_CALL) {
+                openVideoCallDialog(peerName);
+            } else if (newState == CallState.ENDED) {
+                if (activeVideoDialog != null) {
+                    activeVideoDialog.dispose();
+                    activeVideoDialog = null;
+                }
+                if (message != null && !message.isEmpty()) {
+                    messengerPanel.addMessage(ChatMessage.createSystemMessage("📹 " + message));
+                }
+            }
+        });
+    }
+
+    @Override
+    public void onIncomingCallReceived(String callerName, String peerIp, int mediaPort) {
+        SwingUtilities.invokeLater(() -> {
+            IncomingCallDialog dialog = new IncomingCallDialog(this, chatService.getVideoCallService(), callerName, () -> {
+                openVideoCallDialog(callerName);
+            });
+            dialog.setVisible(true);
+        });
+    }
+
+    @Override
+    public void onLocalFrameAvailable(BufferedImage frame) {
+        // Manejado directamente por VideoCallDialog
+    }
+
+    @Override
+    public void onRemoteFrameAvailable(BufferedImage frame) {
+        // Manejado directamente por VideoCallDialog
+    }
+
+    @Override
+    public void onAudioLevelsUpdated(float localLevel, float remoteLevel) {
+        // Manejado directamente por VideoCallDialog
     }
 }

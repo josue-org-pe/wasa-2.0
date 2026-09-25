@@ -16,6 +16,7 @@ public class UserProfile implements Serializable {
     private int avatarColorHex;
     private String statusMessage = "En línea";
     private boolean isBlocked = false;
+    private String avatarImagePath = null;
 
     public UserProfile(String username, ConnectionRole role, String ipAddress, int port) {
         this(UUID.randomUUID().toString(), username, role, ipAddress, port, generateColor(username));
@@ -28,6 +29,18 @@ public class UserProfile implements Serializable {
         this.ipAddress = ipAddress;
         this.port = port;
         this.avatarColorHex = avatarColorHex;
+    }
+
+    public String getAvatarImagePath() {
+        return avatarImagePath;
+    }
+
+    public void setAvatarImagePath(String avatarImagePath) {
+        this.avatarImagePath = avatarImagePath;
+    }
+
+    public boolean hasCustomAvatar() {
+        return avatarImagePath != null && new java.io.File(avatarImagePath).exists();
     }
 
     public String getStatusMessage() {

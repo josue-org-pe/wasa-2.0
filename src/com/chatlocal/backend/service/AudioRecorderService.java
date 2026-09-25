@@ -1,102 +1,135 @@
 package com.chatlocal.backend.service;
 
 import javax.sound.sampled.*;
-import java.io.File;
-import java.io.IOException;
+import java.io.*;
 
 /**
  * Servicio nativo para grabación y reproducción de notas de voz en formato WAV.
- * Utiliza 100% la Java Sound API estándar (javax.sound.sampled) sin librerías externas.
+ * Utiliza 100% la Java Sound API estándar (javax.sound.sampled) con captura en búfer
+ * de memoria y reproducción fluida mediante SourceDataLine sin dependencias externas.
  */
 public class AudioRecorderService {
 
     private TargetDataLine targetLine;
+    private AudioFormat currentFormat;
+    private ByteArrayOutputStream pcmBuffer;
     private File currentAudioFile;
     private long recordStartTime = 0;
     private volatile boolean isRecording = false;
 
-    private Clip activeClip;
+    private SourceDataLine activeSourceLine;
+    private volatile boolean isPlaying = false;
 
     /**
-     * Inicia la captura de audio desde el micrófono en un hilo en segundo plano.
+     * Inicia la captura de audio desde el micrófono probando formatos estándar compatibles.
      */
     public synchronized boolean startRecording() {
         if (isRecording) return false;
 
-        try {
-            // Formato de voz optimizado: 16kHz, 16-bit mono PCM (calidad nítida y peso ligero)
-            AudioFormat format = new AudioFormat(16000.0f, 16, 1, true, false);
+        float[] sampleRates = {16000.0f, 44100.0f, 48000.0f, 8000.0f};
+        targetLine = null;
+
+        for (float rate : sampleRates) {
+            AudioFormat format = new AudioFormat(rate, 16, 1, true, false);
             DataLine.Info info = new DataLine.Info(TargetDataLine.class, format);
-
-            if (!AudioSystem.isLineSupported(info)) {
-                System.err.println("Micrófono no soportado en este sistema");
-                return false;
+            if (AudioSystem.isLineSupported(info)) {
+                try {
+                    targetLine = (TargetDataLine) AudioSystem.getLine(info);
+                    targetLine.open(format, 4096);
+                    targetLine.start();
+                    currentFormat = format;
+                    break;
+                } catch (Exception ignored) {}
             }
+        }
 
-            targetLine = (TargetDataLine) AudioSystem.getLine(info);
-            targetLine.open(format);
-            targetLine.start();
-
-            File storageDir = FileTransferManager.getReceivedFilesFolder();
-            currentAudioFile = new File(storageDir, "audio_nota_" + System.currentTimeMillis() + ".wav");
-            recordStartTime = System.currentTimeMillis();
-            isRecording = true;
-
-            Thread recordThread = new Thread(() -> {
-                try (AudioInputStream ais = new AudioInputStream(targetLine)) {
-                    AudioSystem.write(ais, AudioFileFormat.Type.WAVE, currentAudioFile);
-                } catch (IOException e) {
-                    System.err.println("Error grabando flujo de audio: " + e.getMessage());
-                }
-            }, "audio-recorder-thread");
-            recordThread.setDaemon(true);
-            recordThread.start();
-
-            return true;
-        } catch (LineUnavailableException e) {
-            System.err.println("Línea de audio no disponible: " + e.getMessage());
+        if (targetLine == null) {
+            System.err.println("Micrófono no soportado o actualmente en uso");
             return false;
         }
+
+        pcmBuffer = new ByteArrayOutputStream();
+        File storageDir = FileTransferManager.getReceivedFilesFolder();
+        currentAudioFile = new File(storageDir, "audio_nota_" + System.currentTimeMillis() + ".wav");
+        recordStartTime = System.currentTimeMillis();
+        isRecording = true;
+
+        Thread recordThread = new Thread(() -> {
+            byte[] buf = new byte[1024];
+            while (isRecording && targetLine != null && targetLine.isOpen()) {
+                int read = targetLine.read(buf, 0, buf.length);
+                if (read > 0) {
+                    synchronized (pcmBuffer) {
+                        pcmBuffer.write(buf, 0, read);
+                    }
+                }
+            }
+        }, "audio-recorder-thread");
+        recordThread.setDaemon(true);
+        recordThread.start();
+
+        return true;
     }
 
     /**
-     * Detiene la grabación y retorna el archivo generado junto a su duración en segundos.
+     * Detiene la grabación, finaliza el archivo WAV y retorna el resultado.
      */
     public synchronized AudioRecordResult stopRecording() {
-        if (!isRecording || targetLine == null) {
+        if (!isRecording) return null;
+        isRecording = false;
+
+        if (targetLine != null) {
+            try {
+                targetLine.stop();
+                targetLine.close();
+            } catch (Exception ignored) {}
+            targetLine = null;
+        }
+
+        try { Thread.sleep(60); } catch (InterruptedException ignored) {}
+
+        byte[] pcmData;
+        synchronized (pcmBuffer) {
+            pcmData = pcmBuffer.toByteArray();
+        }
+
+        if (pcmData.length == 0 || currentFormat == null) {
             return null;
         }
 
-        isRecording = false;
         long durationMs = System.currentTimeMillis() - recordStartTime;
         int durationSecs = Math.max(1, (int) Math.round(durationMs / 1000.0));
 
-        targetLine.stop();
-        targetLine.close();
-        targetLine = null;
+        // Escribir archivo WAV con cabecera canónica exacta
+        try (ByteArrayInputStream bais = new ByteArrayInputStream(pcmData);
+             AudioInputStream ais = new AudioInputStream(bais, currentFormat, pcmData.length / currentFormat.getFrameSize())) {
+            AudioSystem.write(ais, AudioFileFormat.Type.WAVE, currentAudioFile);
+        } catch (IOException e) {
+            System.err.println("Error finalizando archivo WAV: " + e.getMessage());
+            return null;
+        }
 
-        // Pequeña pausa para asegurar flush a disco
-        try { Thread.sleep(100); } catch (InterruptedException ignored) {}
-
-        if (currentAudioFile != null && currentAudioFile.exists() && currentAudioFile.length() > 0) {
+        if (currentAudioFile.exists() && currentAudioFile.length() > 44) {
             return new AudioRecordResult(currentAudioFile, durationSecs);
         }
         return null;
     }
 
-    /**
-     * Cancela la grabación y elimina el archivo temporal.
-     */
     public synchronized void cancelRecording() {
-        if (isRecording && targetLine != null) {
-            isRecording = false;
-            targetLine.stop();
-            targetLine.close();
+        isRecording = false;
+        if (targetLine != null) {
+            try {
+                targetLine.stop();
+                targetLine.close();
+            } catch (Exception ignored) {}
             targetLine = null;
         }
         if (currentAudioFile != null && currentAudioFile.exists()) {
             currentAudioFile.delete();
             currentAudioFile = null;
+        }
+        if (pcmBuffer != null) {
+            pcmBuffer.reset();
         }
     }
 
@@ -105,30 +138,56 @@ public class AudioRecorderService {
     }
 
     /**
-     * Reproduce una nota de voz y ejecuta el callback al finalizar.
+     * Reproduce una nota de voz mediante SourceDataLine y ejecuta el callback al finalizar.
      */
     public synchronized void play(File audioFile, Runnable onFinished) {
         stopPlayback();
-        if (audioFile == null || !audioFile.exists()) return;
+        if (audioFile == null || !audioFile.exists() || audioFile.length() == 0) {
+            if (onFinished != null) javax.swing.SwingUtilities.invokeLater(onFinished);
+            return;
+        }
 
+        isPlaying = true;
         new Thread(() -> {
-            try (AudioInputStream ais = AudioSystem.getAudioInputStream(audioFile)) {
-                Clip clip = AudioSystem.getClip();
-                clip.open(ais);
-                activeClip = clip;
+            try (AudioInputStream rawAis = AudioSystem.getAudioInputStream(audioFile)) {
+                AudioFormat baseFormat = rawAis.getFormat();
+                AudioFormat decodedFormat = new AudioFormat(
+                        AudioFormat.Encoding.PCM_SIGNED,
+                        baseFormat.getSampleRate(),
+                        16,
+                        baseFormat.getChannels(),
+                        baseFormat.getChannels() * 2,
+                        baseFormat.getSampleRate(),
+                        false
+                );
 
-                clip.addLineListener(event -> {
-                    if (event.getType() == LineEvent.Type.STOP) {
-                        clip.close();
-                        if (onFinished != null) {
-                            javax.swing.SwingUtilities.invokeLater(onFinished);
-                        }
+                try (AudioInputStream dais = AudioSystem.getAudioInputStream(decodedFormat, rawAis)) {
+                    DataLine.Info info = new DataLine.Info(SourceDataLine.class, decodedFormat);
+                    SourceDataLine line = (SourceDataLine) AudioSystem.getLine(info);
+                    line.open(decodedFormat);
+                    line.start();
+                    synchronized (this) {
+                        activeSourceLine = line;
                     }
-                });
 
-                clip.start();
+                    byte[] buffer = new byte[4096];
+                    int read;
+                    while (isPlaying && (read = dais.read(buffer, 0, buffer.length)) != -1) {
+                        line.write(buffer, 0, read);
+                    }
+                    if (isPlaying) {
+                        line.drain();
+                    }
+                    line.stop();
+                    line.close();
+                }
             } catch (Exception e) {
-                System.err.println("Error al reproducir nota de voz: " + e.getMessage());
+                System.err.println("Error al reproducir audio: " + e.getMessage());
+            } finally {
+                synchronized (this) {
+                    activeSourceLine = null;
+                    isPlaying = false;
+                }
                 if (onFinished != null) {
                     javax.swing.SwingUtilities.invokeLater(onFinished);
                 }
@@ -137,12 +196,13 @@ public class AudioRecorderService {
     }
 
     public synchronized void stopPlayback() {
-        if (activeClip != null) {
+        isPlaying = false;
+        if (activeSourceLine != null) {
             try {
-                if (activeClip.isRunning()) activeClip.stop();
-                activeClip.close();
+                activeSourceLine.stop();
+                activeSourceLine.close();
             } catch (Exception ignored) {}
-            activeClip = null;
+            activeSourceLine = null;
         }
     }
 
