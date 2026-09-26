@@ -23,8 +23,8 @@ public class MediaStreamManager {
 
     private static final byte PKT_VIDEO = 1;
     private static final byte PKT_AUDIO = 2;
-    private static final int CHUNK_SIZE = 1100;
-    private static final int TARGET_FPS = 18;
+    private static final int CHUNK_SIZE = 1200;
+    private static final int TARGET_FPS = 60;
     private static final int FRAME_INTERVAL_MS = 1000 / TARGET_FPS;
 
     public interface MediaFrameConsumer {
@@ -79,8 +79,12 @@ public class MediaStreamManager {
     public MediaStreamManager(VideoSource initialSource, MediaFrameConsumer consumer) throws SocketException {
         this.consumer = consumer;
         this.currentVideoSource = initialSource;
-        // Asignar puerto UDP dinámico libre
+        // Asignar puerto UDP dinámico libre con búferes ampliados para HD 60 FPS
         this.udpSocket = new DatagramSocket(0);
+        try {
+            this.udpSocket.setSendBufferSize(4 * 1024 * 1024);
+            this.udpSocket.setReceiveBufferSize(8 * 1024 * 1024);
+        } catch (Exception ignored) {}
         this.localPort = udpSocket.getLocalPort();
     }
 
@@ -186,7 +190,7 @@ public class MediaStreamManager {
                 writer = writers.next();
                 param = writer.getDefaultWriteParam();
                 param.setCompressionMode(ImageWriteParam.MODE_EXPLICIT);
-                param.setCompressionQuality(0.55f);
+                param.setCompressionQuality(0.62f);
             }
         } catch (Exception ignored) {}
 
@@ -208,7 +212,7 @@ public class MediaStreamManager {
             }
 
             long elapsed = System.currentTimeMillis() - loopStart;
-            long sleepTime = Math.max(10, FRAME_INTERVAL_MS - elapsed);
+            long sleepTime = Math.max(1, FRAME_INTERVAL_MS - elapsed);
             try {
                 Thread.sleep(sleepTime);
             } catch (InterruptedException e) {

@@ -11,6 +11,8 @@ import com.chatlocal.ui.theme.ThemeManager;
 
 import javax.swing.*;
 import java.awt.*;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.awt.geom.RoundRectangle2D;
@@ -42,6 +44,7 @@ public class VideoCallDialog extends JDialog implements VideoCallListener {
 
     private JPanel remoteVideoPanel;
     private JPanel localPipPanel;
+    private boolean swapViews = false;
 
     private long callStartTime = 0;
     private javax.swing.Timer durationTimer;
@@ -85,8 +88,9 @@ public class VideoCallDialog extends JDialog implements VideoCallListener {
                 int w = getWidth();
                 int h = getHeight();
 
-                if (remoteFrame != null && callService.getCallState() == CallState.CONNECTED) {
-                    drawScaledImage(g2, remoteFrame, w, h);
+                BufferedImage mainImg = swapViews ? localFrame : remoteFrame;
+                if (mainImg != null && (swapViews || callService.getCallState() == CallState.CONNECTED)) {
+                    drawScaledImage(g2, mainImg, w, h);
                 } else {
                     drawWaitingPlaceholder(g2, w, h);
                 }
@@ -110,36 +114,51 @@ public class VideoCallDialog extends JDialog implements VideoCallListener {
                 // Recorte redondeado para PiP
                 g2.setClip(new RoundRectangle2D.Float(0, 0, w, h, 14, 14));
 
-                if (localFrame != null && callService.isVideoEnabled()) {
-                    drawScaledImage(g2, localFrame, w, h);
+                BufferedImage pipImg = swapViews ? remoteFrame : localFrame;
+                if (pipImg != null && (swapViews || callService.isVideoEnabled())) {
+                    drawScaledImage(g2, pipImg, w, h);
                 } else {
                     g2.setColor(new Color(24, 30, 44));
                     g2.fillRect(0, 0, w, h);
                     g2.setColor(Color.WHITE);
-                    g2.setFont(new Font("Segoe UI", Font.BOLD, 12));
-                    String txt = "Cámara apagada";
+                    g2.setFont(new Font("Segoe UI", Font.BOLD, 11));
+                    String txt = swapViews ? "Esperando remoto..." : "Cámara apagada";
                     FontMetrics fm = g2.getFontMetrics();
                     g2.drawString(txt, (w - fm.stringWidth(txt)) / 2, (h - fm.getHeight()) / 2 + fm.getAscent());
                 }
 
                 // Borde elegante
                 g2.setClip(null);
-                g2.setColor(localAudioLevel > 0.05f ? new Color(16, 185, 129) : ThemeManager.getTheme().borderActive);
+                float activeAudio = swapViews ? remoteAudioLevel : localAudioLevel;
+                g2.setColor(activeAudio > 0.05f ? new Color(16, 185, 129) : ThemeManager.getTheme().borderActive);
                 g2.setStroke(new BasicStroke(2.0f));
                 g2.drawRoundRect(1, 1, w - 2, h - 2, 14, 14);
 
-                // Badge de "Tú"
+                // Badge identificador
                 g2.setFont(new Font("Segoe UI", Font.BOLD, 10));
                 g2.setColor(new Color(0, 0, 0, 160));
-                g2.fillRoundRect(8, h - 24, 36, 16, 8, 8);
+                String badgeText = swapViews ? peerName : "Tú";
+                FontMetrics bFm = g2.getFontMetrics();
+                int bWidth = bFm.stringWidth(badgeText) + 16;
+                g2.fillRoundRect(8, h - 24, bWidth, 16, 8, 8);
                 g2.setColor(Color.WHITE);
-                g2.drawString("Tú", 18, h - 12);
+                g2.drawString(badgeText, 16, h - 12);
 
                 g2.dispose();
             }
         };
         localPipPanel.setOpaque(false);
         localPipPanel.setSize(180, 135);
+        localPipPanel.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        localPipPanel.setToolTipText("Haz clic para alternar pantalla completa y miniatura");
+        localPipPanel.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseClicked(MouseEvent e) {
+                swapViews = !swapViews;
+                remoteVideoPanel.repaint();
+                localPipPanel.repaint();
+            }
+        });
 
         // 3. Barra Superior OSD (Capa Flotante 2)
         JPanel topBar = createTopBar();
@@ -225,12 +244,13 @@ public class VideoCallDialog extends JDialog implements VideoCallListener {
         JPanel right = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 2));
         right.setOpaque(false);
 
-        JLabel lblQuality = new JLabel("● HD 20 FPS");
+        JLabel lblQuality = new JLabel("● HD 720p 60 FPS");
         lblQuality.setFont(new Font("Segoe UI", Font.BOLD, 10));
-        lblQuality.setForeground(new Color(148, 163, 184));
+        lblQuality.setForeground(new Color(52, 211, 153));
         right.add(lblQuality);
 
         comboSources = new JComboBox<>(VideoSourceType.values());
+        comboSources.setSelectedItem(callService.getVideoSourceType());
         comboSources.setFont(new Font("Segoe UI", Font.PLAIN, 11));
         comboSources.setBackground(ThemeManager.getTheme().bgSidebar);
         comboSources.setForeground(ThemeManager.getTheme().textPrimary);

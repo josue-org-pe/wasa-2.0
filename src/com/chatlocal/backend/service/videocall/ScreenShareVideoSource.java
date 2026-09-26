@@ -10,8 +10,8 @@ import java.awt.image.BufferedImage;
  */
 public class ScreenShareVideoSource implements VideoSource {
 
-    private static final int TARGET_WIDTH = 480;
-    private static final int TARGET_HEIGHT = 360;
+    private static final int TARGET_WIDTH = 1280;
+    private static final int TARGET_HEIGHT = 720;
 
     private Robot robot;
     private final Rectangle screenRect;
