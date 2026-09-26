@@ -1,6 +1,6 @@
 package com.chatlocal;
 
-import com.chatlocal.ui.ChatWindow;
+import com.chatlocal.ui.VentanaChat;
 
 import javax.swing.*;
 
@@ -17,7 +17,7 @@ public class Main {
         } catch (Exception ignored) {}
 
         SwingUtilities.invokeLater(() -> {
-            ChatWindow window = new ChatWindow();
+            VentanaChat window = new VentanaChat();
             window.setVisible(true);
         });
     }

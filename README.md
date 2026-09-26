@@ -50,28 +50,30 @@ Proyecto de mensajería y videollamadas P2P en red local para el curso de Progra
 ```text
 version2/
 ├── .gitignore
-├── build.bat              # Script para compilar JAR y empaquetar .exe con jpackage
+├── build.bat              # Compila JAR y genera instalador .exe con jpackage
 ├── run.bat                # Compila y ejecuta la aplicación completa
-├── run-preview.bat        # Vista previa instantánea del chat en ~1s
-├── login-preview.bat      # Vista previa de la pantalla de login y ping
-├── test-duo.bat           # Lanza dos instancias locales para pruebas en vivo
-├── PACKAGING.md           # Guía detallada de empaquetado
+├── run-preview.bat        # Vista previa instantánea del chat
+├── login-preview.bat      # Vista previa de la pantalla de conexión y ping
+├── test-duo.bat           # Lanza dos instancias para pruebas locales
+├── PACKAGING.md           # Guía de empaquetado
 ├── PARTE1-INSTALADOR.md   # Guía del instalador
+├── icon.ico / icon.png    # Íconos de la aplicación (gatito)
 └── src/
-    ├── ChatApp.java
-    ├── ChatConnection.java
+    ├── ChatApp.java       # Lanzador rápido
     └── com/chatlocal/
-        ├── Main.java
+        ├── Main.java      # Punto de entrada principal
         ├── backend/
-        │   ├── model/       # ChatMessage, UserProfile, ChatRoom, MessageType, MessageStatus
-        │   ├── network/     # SocketConnection, ProtocolConstants
-        │   └── service/     # ChatService, ChatServiceImpl, AudioRecorderService, PingTester, FileTransferManager
+        │   ├── event/     # ConexionDeEscucha, MensajeDeEscucha
+        │   ├── model/     # MensajeChat, UsuarioPerfil, SalaChat, TipoMensaje, EstadoMensaje...
+        │   ├── network/   # ConexionSocket, ConstantesProtocolo
+        │   └── service/   # ServicioChat, GestorTransferenciaArchivos, UtilidadesRed, videocall...
         └── ui/
-            ├── ChatWindow.java
-            ├── theme/       # AppTheme, ThemeManager, Icons
-            ├── components/  # AudioRecorderBar, EmojiPickerPopup, ChatBubblePanel, ContactListItem, ModernButton...
-            ├── dialogs/     # SettingsDialog, CreateRoomDialog
-            └── panels/      # LoginPanel, SidebarPanel, ChatAreaPanel, MainMessengerPanel, ConnectingPanel
+            ├── VentanaChat.java
+            ├── VistaPreviaUi.java
+            ├── theme/       # Tema, GestorTema, TemaApp, Iconos
+            ├── components/  # BotonModerno, CampoTextoModerno, BarraGrabadorAudio...
+            ├── dialogs/     # DialogoAjustes, DialogoCrearSala, videocall...
+            └── panels/      # PanelLogin, PanelBarraLateral, PanelAreaChat, PanelConectando...
 ```
 
 ---

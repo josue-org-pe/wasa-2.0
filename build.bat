@@ -37,7 +37,10 @@ echo [3/3] Generando instalador .exe con jpackage...
 taskkill /F /IM wasa-3.0.exe >nul 2>&1
 taskkill /F /IM wasa.exe >nul 2>&1
 timeout /t 1 /nobreak >nul
-if exist salida rmdir /s /q salida
+if exist salida (
+    attrib -r /s /d salida\* >nul 2>&1
+    rmdir /s /q salida
+)
 
 jpackage ^
   --input . ^

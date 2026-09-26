@@ -1,0 +1,370 @@
+package com.chatlocal.ui.dialogs;
+
+import com.chatlocal.backend.model.UsuarioPerfil;
+import com.chatlocal.backend.service.ServicioChat;
+import com.chatlocal.backend.service.GestorTransferenciaArchivos;
+import com.chatlocal.ui.components.BotonModerno;
+import com.chatlocal.ui.components.CampoTextoModerno;
+import com.chatlocal.ui.theme.TemaApp;
+import com.chatlocal.ui.theme.Iconos;
+import com.chatlocal.ui.theme.GestorTema;
+
+import javax.swing.*;
+import java.awt.*;
+import java.io.File;
+
+// ventana de configuracion y perfil
+public class DialogoAjustes extends JDialog {
+
+    private final ServicioChat chatService;
+    private final Runnable onSettingsUpdated;
+
+    private CampoTextoModerno txtUsername;
+    private CampoTextoModerno txtStatusMessage;
+    private int selectedColorHex;
+    private DefaultListModel<String> blockedListModel;
+
+    private String customAvatarPath;
+
+    private static final int[] PALETTE = {
+            0x8B5CF6, 0x10B981, 0x3B82F6, 0xF43F5E,
+            0xF59E0B, 0x06B6D4, 0xEC4899, 0x14B8A6
+    };
+
+    public DialogoAjustes(Frame parent, ServicioChat chatService, Runnable onSettingsUpdated) {
+        super(parent, "Configuración", true);
+        this.chatService = chatService;
+        this.onSettingsUpdated = onSettingsUpdated;
+        com.chatlocal.ui.theme.Tema.applyAppIcon(this);
+
+        UsuarioPerfil current = chatService.getLocalUserProfile();
+        this.selectedColorHex = current != null ? current.getAvatarColorHex() : 0x8B5CF6;
+        this.customAvatarPath = current != null ? current.getAvatarImagePath() : null;
+
+        setSize(540, 520);
+        setLocationRelativeTo(parent);
+        setResizable(false);
+        getContentPane().setBackground(GestorTema.getTheme().bgDark);
+
+        buildUI();
+    }
+
+    private void buildUI() {
+        JPanel root = new JPanel(new BorderLayout());
+        root.setOpaque(true);
+        root.setBackground(GestorTema.getTheme().bgDark);
+        root.setBorder(BorderFactory.createEmptyBorder(16, 18, 16, 18));
+
+        JTabbedPane tabs = new JTabbedPane();
+        tabs.setFont(new Font("Segoe UI", Font.BOLD, 12));
+        tabs.setBackground(GestorTema.getTheme().bgDark);
+        tabs.setForeground(GestorTema.getTheme().textPrimary);
+
+        tabs.addTab("👤 Mi Perfil", createProfileTab());
+        tabs.addTab("🎨 Apariencia", createAppearanceTab());
+        tabs.addTab("🚫 Bloqueados", createBlockedTab());
+        tabs.addTab("📁 Almacenamiento", createStorageTab());
+
+        root.add(tabs, BorderLayout.CENTER);
+
+        // Barra inferior con botón Guardar
+        JPanel footer = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 8));
+        footer.setOpaque(false);
+
+        BotonModerno btnCancel = new BotonModerno("Cerrar", BotonModerno.Variant.GHOST);
+        btnCancel.addActionListener(e -> dispose());
+
+        BotonModerno btnSave = new BotonModerno("Guardar Cambios", Iconos.check(14, Color.WHITE), BotonModerno.Variant.PRIMARY);
+        btnSave.addActionListener(e -> saveSettings());
+
+        footer.add(btnCancel);
+        footer.add(btnSave);
+        root.add(footer, BorderLayout.SOUTH);
+
+        add(root);
+    }
+
+    private JPanel createProfileTab() {
+        JPanel panel = new JPanel();
+        panel.setOpaque(false);
+        panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
+        panel.setBorder(BorderFactory.createEmptyBorder(14, 14, 14, 14));
+
+        UsuarioPerfil profile = chatService.getLocalUserProfile();
+
+        // Nombre de usuario
+        JLabel lblName = new JLabel("Nombre o Alias:");
+        lblName.setFont(new Font("Segoe UI", Font.BOLD, 12));
+        lblName.setForeground(GestorTema.getTheme().textPrimary);
+        txtUsername = new CampoTextoModerno("Tu alias...", 15);
+        txtUsername.setText(profile != null ? profile.getUsername() : "Usuario");
+
+        panel.add(lblName);
+        panel.add(Box.createVerticalStrut(4));
+        panel.add(txtUsername);
+        panel.add(Box.createVerticalStrut(12));
+
+        // Mensaje de estado
+        JLabel lblStatus = new JLabel("Mensaje de Estado:");
+        lblStatus.setFont(new Font("Segoe UI", Font.BOLD, 12));
+        lblStatus.setForeground(GestorTema.getTheme().textPrimary);
+        txtStatusMessage = new CampoTextoModerno("Disponible, En clase, etc...", 15);
+        txtStatusMessage.setText(profile != null ? profile.getStatusMessage() : "En línea");
+
+        panel.add(lblStatus);
+        panel.add(Box.createVerticalStrut(4));
+        panel.add(txtStatusMessage);
+        panel.add(Box.createVerticalStrut(12));
+
+        // Foto de Perfil Personalizada
+        JLabel lblPhoto = new JLabel("Foto de Perfil Personalizada:");
+        lblPhoto.setFont(new Font("Segoe UI", Font.BOLD, 12));
+        lblPhoto.setForeground(GestorTema.getTheme().textPrimary);
+        panel.add(lblPhoto);
+        panel.add(Box.createVerticalStrut(4));
+
+        JPanel photoRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
+        photoRow.setOpaque(false);
+
+        JLabel lblPhotoStatus = new JLabel(customAvatarPath != null ? new File(customAvatarPath).getName() : "Sin imagen seleccionada");
+        lblPhotoStatus.setFont(new Font("Segoe UI", Font.PLAIN, 11));
+        lblPhotoStatus.setForeground(GestorTema.getTheme().textMuted);
+
+        BotonModerno btnUpload = new BotonModerno("Subir Imagen", Iconos.camera(13, Color.WHITE), BotonModerno.Variant.SECONDARY);
+        btnUpload.setFont(new Font("Segoe UI", Font.PLAIN, 11));
+        btnUpload.addActionListener(e -> {
+            JFileChooser chooser = new JFileChooser();
+            chooser.setDialogTitle("Selecciona una foto de perfil");
+            chooser.setFileFilter(new javax.swing.filechooser.FileNameExtensionFilter("Imágenes (JPG, PNG, GIF, WEBP)", "jpg", "jpeg", "png", "gif", "webp"));
+            int res = chooser.showOpenDialog(this);
+            if (res == JFileChooser.APPROVE_OPTION && chooser.getSelectedFile() != null) {
+                customAvatarPath = chooser.getSelectedFile().getAbsolutePath();
+                lblPhotoStatus.setText(chooser.getSelectedFile().getName());
+            }
+        });
+
+        BotonModerno btnRemovePhoto = new BotonModerno("Quitar", BotonModerno.Variant.GHOST);
+        btnRemovePhoto.setFont(new Font("Segoe UI", Font.PLAIN, 11));
+        btnRemovePhoto.addActionListener(e -> {
+            customAvatarPath = null;
+            lblPhotoStatus.setText("Sin imagen (usar iniciales)");
+        });
+
+        photoRow.add(btnUpload);
+        photoRow.add(btnRemovePhoto);
+        photoRow.add(lblPhotoStatus);
+        panel.add(photoRow);
+        panel.add(Box.createVerticalStrut(12));
+
+        // Selector de color de avatar
+        JLabel lblColor = new JLabel("Color de Fondo del Avatar:");
+        lblColor.setFont(new Font("Segoe UI", Font.BOLD, 12));
+        lblColor.setForeground(GestorTema.getTheme().textPrimary);
+        panel.add(lblColor);
+        panel.add(Box.createVerticalStrut(6));
+
+        JPanel palettePanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 4));
+        palettePanel.setOpaque(false);
+
+        ButtonGroup group = new ButtonGroup();
+        for (int colorHex : PALETTE) {
+            JRadioButton btn = new JRadioButton() {
+                @Override
+                protected void paintComponent(Graphics g) {
+                    Graphics2D g2 = (Graphics2D) g.create();
+                    g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                    g2.setColor(new Color(colorHex));
+                    g2.fillOval(2, 2, 24, 24);
+                    if (isSelected()) {
+                        g2.setColor(Color.WHITE);
+                        g2.setStroke(new BasicStroke(2.0f));
+                        g2.drawOval(0, 0, 27, 27);
+                    }
+                    g2.dispose();
+                }
+            };
+            btn.setPreferredSize(new Dimension(28, 28));
+            btn.setOpaque(false);
+            btn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+            if (colorHex == selectedColorHex) btn.setSelected(true);
+            btn.addActionListener(e -> selectedColorHex = colorHex);
+            group.add(btn);
+            palettePanel.add(btn);
+        }
+        panel.add(palettePanel);
+
+        return panel;
+    }
+
+    private JPanel createAppearanceTab() {
+        JPanel panel = new JPanel();
+        panel.setOpaque(false);
+        panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
+        panel.setBorder(BorderFactory.createEmptyBorder(14, 14, 14, 14));
+
+        JLabel lblTheme = new JLabel("Elige tu paleta de tema visual:");
+        lblTheme.setFont(new Font("Segoe UI", Font.BOLD, 13));
+        lblTheme.setForeground(GestorTema.getTheme().textPrimary);
+        panel.add(lblTheme);
+        panel.add(Box.createVerticalStrut(10));
+
+        for (TemaApp theme : GestorTema.getAvailableThemes()) {
+            JPanel row = new JPanel(new BorderLayout(10, 0));
+            row.setOpaque(true);
+            row.setBackground(theme.bgCard);
+            row.setBorder(BorderFactory.createEmptyBorder(8, 12, 8, 12));
+
+            JLabel lblName = new JLabel(theme.getName());
+            lblName.setFont(new Font("Segoe UI", Font.BOLD, 12));
+            lblName.setForeground(theme.textPrimary);
+
+            BotonModerno btnApply = new BotonModerno(
+                    GestorTema.getTheme().getId().equals(theme.getId()) ? "Activo" : "Aplicar",
+                    BotonModerno.Variant.PRIMARY
+            );
+            btnApply.setFont(new Font("Segoe UI", Font.PLAIN, 11));
+            btnApply.setMargin(new Insets(3, 10, 3, 10));
+            btnApply.setEnabled(!GestorTema.getTheme().getId().equals(theme.getId()));
+            btnApply.addActionListener(e -> {
+                GestorTema.setTheme(theme);
+                dispose();
+                if (onSettingsUpdated != null) onSettingsUpdated.run();
+            });
+
+            row.add(lblName, BorderLayout.CENTER);
+            row.add(btnApply, BorderLayout.EAST);
+
+            panel.add(row);
+            panel.add(Box.createVerticalStrut(6));
+        }
+
+        // Fondo del Chat
+        panel.add(Box.createVerticalStrut(10));
+        JLabel lblWallpaper = new JLabel("Fondo de Pantalla del Chat (Wallpaper):");
+        lblWallpaper.setFont(new Font("Segoe UI", Font.BOLD, 13));
+        lblWallpaper.setForeground(GestorTema.getTheme().textPrimary);
+        panel.add(lblWallpaper);
+        panel.add(Box.createVerticalStrut(6));
+
+        JPanel wallpaperRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
+        wallpaperRow.setOpaque(false);
+
+        JLabel lblWallStatus = new JLabel(chatService.getChatWallpaperPath() != null ? new File(chatService.getChatWallpaperPath()).getName() : "Predeterminado");
+        lblWallStatus.setFont(new Font("Segoe UI", Font.PLAIN, 11));
+        lblWallStatus.setForeground(GestorTema.getTheme().textMuted);
+
+        BotonModerno btnChooseWall = new BotonModerno("Elegir Fondo", Iconos.attach(13, Color.WHITE), BotonModerno.Variant.SECONDARY);
+        btnChooseWall.setFont(new Font("Segoe UI", Font.PLAIN, 11));
+        btnChooseWall.addActionListener(e -> {
+            JFileChooser chooser = new JFileChooser();
+            chooser.setDialogTitle("Seleccionar Imagen de Fondo para el Chat");
+            chooser.setFileFilter(new javax.swing.filechooser.FileNameExtensionFilter("Imágenes (JPG, PNG, WEBP)", "jpg", "jpeg", "png", "webp"));
+            int res = chooser.showOpenDialog(this);
+            if (res == JFileChooser.APPROVE_OPTION && chooser.getSelectedFile() != null) {
+                chatService.setChatWallpaperPath(chooser.getSelectedFile().getAbsolutePath());
+                lblWallStatus.setText(chooser.getSelectedFile().getName());
+                if (onSettingsUpdated != null) onSettingsUpdated.run();
+            }
+        });
+
+        BotonModerno btnResetWall = new BotonModerno("Restablecer", BotonModerno.Variant.GHOST);
+        btnResetWall.setFont(new Font("Segoe UI", Font.PLAIN, 11));
+        btnResetWall.addActionListener(e -> {
+            chatService.setChatWallpaperPath(null);
+            lblWallStatus.setText("Predeterminado");
+            if (onSettingsUpdated != null) onSettingsUpdated.run();
+        });
+
+        wallpaperRow.add(btnChooseWall);
+        wallpaperRow.add(btnResetWall);
+        wallpaperRow.add(lblWallStatus);
+        panel.add(wallpaperRow);
+
+        return panel;
+    }
+
+    private JPanel createBlockedTab() {
+        JPanel panel = new JPanel(new BorderLayout(10, 8));
+        panel.setOpaque(false);
+        panel.setBorder(BorderFactory.createEmptyBorder(12, 12, 12, 12));
+
+        JLabel lblInfo = new JLabel("Usuarios bloqueados (sus mensajes son ignorados):");
+        lblInfo.setFont(new Font("Segoe UI", Font.PLAIN, 12));
+        lblInfo.setForeground(GestorTema.getTheme().textMuted);
+        panel.add(lblInfo, BorderLayout.NORTH);
+
+        blockedListModel = new DefaultListModel<>();
+        for (String u : chatService.getBlockedUsers()) {
+            blockedListModel.addElement(u);
+        }
+
+        JList<String> list = new JList<>(blockedListModel);
+        list.setBackground(GestorTema.getTheme().bgInput);
+        list.setForeground(GestorTema.getTheme().textPrimary);
+        list.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+
+        panel.add(new JScrollPane(list), BorderLayout.CENTER);
+
+        BotonModerno btnUnblock = new BotonModerno("Desbloquear Seleccionado", BotonModerno.Variant.SECONDARY);
+        btnUnblock.addActionListener(e -> {
+            String selected = list.getSelectedValue();
+            if (selected != null) {
+                chatService.unblockUser(selected);
+                blockedListModel.removeElement(selected);
+                JOptionPane.showMessageDialog(this, "Usuario " + selected + " desbloqueado.");
+            }
+        });
+        panel.add(btnUnblock, BorderLayout.SOUTH);
+
+        return panel;
+    }
+
+    private JPanel createStorageTab() {
+        JPanel panel = new JPanel();
+        panel.setOpaque(false);
+        panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
+        panel.setBorder(BorderFactory.createEmptyBorder(14, 14, 14, 14));
+
+        File folder = GestorTransferenciaArchivos.getReceivedFilesFolder();
+
+        JLabel lblPath = new JLabel("Carpeta de archivos recibidos y notas de voz:");
+        lblPath.setFont(new Font("Segoe UI", Font.BOLD, 12));
+        lblPath.setForeground(GestorTema.getTheme().textPrimary);
+
+        JLabel lblDir = new JLabel(folder.getAbsolutePath());
+        lblDir.setFont(new Font("Consolas", Font.PLAIN, 11));
+        lblDir.setForeground(GestorTema.getTheme().textMuted);
+
+        panel.add(lblPath);
+        panel.add(Box.createVerticalStrut(6));
+        panel.add(lblDir);
+        panel.add(Box.createVerticalStrut(14));
+
+        BotonModerno btnOpen = new BotonModerno("Abrir Carpeta en Windows Explorer", Iconos.folder(14, Color.WHITE), BotonModerno.Variant.SECONDARY);
+        btnOpen.addActionListener(e -> GestorTransferenciaArchivos.openReceivedFolder());
+        panel.add(btnOpen);
+
+        return panel;
+    }
+
+    private void saveSettings() {
+        String newName = txtUsername.getText().trim();
+        if (newName.length() < 2) {
+            JOptionPane.showMessageDialog(this, "El nombre de usuario debe tener al menos 2 caracteres.", "Aviso", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+
+        UsuarioPerfil profile = chatService.getLocalUserProfile();
+        if (profile != null) {
+            profile.setUsername(newName);
+            profile.setStatusMessage(txtStatusMessage.getText().trim());
+            profile.setAvatarColorHex(selectedColorHex);
+            profile.setAvatarImagePath(customAvatarPath);
+        }
+
+        dispose();
+        if (onSettingsUpdated != null) {
+            onSettingsUpdated.run();
+        }
+    }
+}
