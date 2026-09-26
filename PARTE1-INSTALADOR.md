@@ -23,33 +23,27 @@ de instalación, crea acceso directo, y aparece en "Agregar o quitar programas".
 
 ## Cómo generar el instalador
 
-Desde la carpeta `chat-app`, simplemente ejecuta:
+Desde la carpeta del proyecto, ejecuta:
 
-```
+```cmd
 build.bat
 ```
 
 Esto hace automáticamente:
-1. Compila `src.ChatConnection` y `src/ChatApp.java`
-2. Los empaqueta en `ChatApp.jar`
-3. Corre `jpackage` y genera el instalador en `salida\ChatLocal-1.0.exe`
+1. Compila el proyecto completo
+2. Empaqueta el JAR
+3. Corre `jpackage` y genera el instalador en `salida\wasa-3.0.exe`
 
 ## Qué va a ver la persona que lo instala
 
-Al hacer doble clic en `ChatLocal-1.0.exe`, aparece un asistente estilo instalador
-de Windows normal:
+Al hacer doble clic en `wasa-3.0.exe`, aparece el instalador con el ícono y asistente:
 
-1. Pantalla de bienvenida
-2. **Pantalla para elegir la carpeta de instalación** (gracias a `--win-dir-chooser`
-   en el script) — por defecto sugiere algo como `C:\Program Files\ChatLocal`, pero
-   el usuario puede cambiarla.
-3. Instalación (copia los archivos, crea acceso directo en el escritorio y en el
-   menú Inicio, gracias a `--win-shortcut` y `--win-menu`)
+1. Pantalla de bienvenida con logo
+2. Pantalla para elegir la carpeta de instalación
+3. Instalación (copia los archivos, crea acceso directo en el escritorio y en el menú Inicio)
 4. Finalización
 
-Después de instalado, la persona simplemente busca "ChatLocal" en el menú Inicio o
-usa el acceso directo del escritorio — igual que cualquier programa (Chrome, Discord,
-etc). Se puede desinstalar desde "Agregar o quitar programas" normalmente.
+Después de instalado, la persona busca "wasa" en el menú Inicio o usa el acceso directo del escritorio.
 
 ## Nota sobre la advertencia de Windows SmartScreen
 

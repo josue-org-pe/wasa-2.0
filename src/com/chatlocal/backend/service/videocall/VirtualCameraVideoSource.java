@@ -6,13 +6,7 @@ import java.awt.image.BufferedImage;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 
-/**
- * Fuente de video virtual HD (1280x720 @ 60 FPS) de alta fidelidad:
- * Renderiza una señal de cámara simulada con estética moderna estilo streaming/Discord:
- * - Avatar dinámico con halo reactivo al nivel de micrófono en tiempo real.
- * - Ecualizador gráfico de audio fluido a 60 FPS.
- * - Marcadores OSD/HUD: "● LIVE", contador de tiempo, badge de usuario y "HD 720p • 60 FPS".
- */
+// camara virtual con avatar por si no hay camara fisica
 public class VirtualCameraVideoSource implements VideoSource {
 
     private static final int WIDTH = 1280;
@@ -239,10 +233,10 @@ public class VirtualCameraVideoSource implements VideoSource {
         g2.setColor(new Color(248, 250, 252));
         g2.drawString(userBadge, 36, HEIGHT - 31);
 
-        // 4. Marca de agua sutil en esquina inferior derecha
+        // 4. Marca de agua
         g2.setFont(new Font("Segoe UI", Font.PLAIN, 12));
         g2.setColor(new Color(255, 255, 255, 80));
-        g2.drawString("ChatLocal Video HD", WIDTH - 145, HEIGHT - 31);
+        g2.drawString("wasa 3.0", WIDTH - 85, HEIGHT - 31);
 
         // Viñeta oscura suave en los bordes
         Paint oldPaint = g2.getPaint();

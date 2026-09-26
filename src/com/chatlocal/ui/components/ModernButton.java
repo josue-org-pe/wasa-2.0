@@ -7,10 +7,7 @@ import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 
-/**
- * Botón moderno con esquinas redondeadas, transiciones visuales hover/pressed
- * y soporte para diferentes variantes de estilo (PRIMARY, SECONDARY, DANGER, GHOST).
- */
+// boton con bordes redondeados y colores segun su tipo
 public class ModernButton extends JButton {
 
     public enum Variant {

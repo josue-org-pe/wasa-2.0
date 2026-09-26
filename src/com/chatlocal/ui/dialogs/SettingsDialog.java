@@ -13,10 +13,7 @@ import javax.swing.*;
 import java.awt.*;
 import java.io.File;
 
-/**
- * Diálogo modal de Configuración y Personalización de la aplicación.
- * Permite cambiar perfil, mensaje de estado, tema visual en caliente y gestionar bloqueos.
- */
+// ventana de configuracion y perfil
 public class SettingsDialog extends JDialog {
 
     private final ChatService chatService;
@@ -35,9 +32,10 @@ public class SettingsDialog extends JDialog {
     };
 
     public SettingsDialog(Frame parent, ChatService chatService, Runnable onSettingsUpdated) {
-        super(parent, "Configuración y Personalización", true);
+        super(parent, "Configuración", true);
         this.chatService = chatService;
         this.onSettingsUpdated = onSettingsUpdated;
+        com.chatlocal.ui.theme.Theme.applyAppIcon(this);
 
         UserProfile current = chatService.getLocalUserProfile();
         this.selectedColorHex = current != null ? current.getAvatarColorHex() : 0x8B5CF6;

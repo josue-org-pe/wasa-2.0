@@ -7,10 +7,7 @@ import java.io.IOException;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
-/**
- * Implementación del servicio de videollamadas.
- * Orquesta la señalización por sockets TCP y el intercambio de medios por UDP.
- */
+// esto maneja las videollamadas
 public class VideoCallServiceImpl implements VideoCallService, MediaStreamManager.MediaFrameConsumer {
 
     public interface CallSignalingHandler {

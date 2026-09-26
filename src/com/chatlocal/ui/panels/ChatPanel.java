@@ -13,9 +13,7 @@ import java.awt.event.AdjustmentEvent;
 import java.awt.event.AdjustmentListener;
 import java.io.File;
 
-/**
- * Pantalla principal de mensajería con feed de burbujas, barra de estado y entrada de texto.
- */
+// panel donde se muestran los mensajes y la entrada de texto
 public class ChatPanel extends JPanel {
 
     public interface ChatPanelCallback {

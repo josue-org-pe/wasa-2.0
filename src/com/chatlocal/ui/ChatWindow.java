@@ -14,6 +14,7 @@ import com.chatlocal.ui.dialogs.videocall.VideoCallDialog;
 import com.chatlocal.ui.panels.ConnectingPanel;
 import com.chatlocal.ui.panels.LoginPanel;
 import com.chatlocal.ui.panels.MainMessengerPanel;
+import com.chatlocal.ui.theme.Theme;
 import com.chatlocal.ui.theme.ThemeManager;
 
 import java.awt.image.BufferedImage;
@@ -23,10 +24,7 @@ import java.awt.*;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 
-/**
- * Ventana principal de la aplicación.
- * Orquesta la navegación entre Login, pantalla de espera con Ping y la vista principal de mensajería.
- */
+// ventana principal de wasa
 public class ChatWindow extends JFrame implements ConnectionListener, MessageListener, VideoCallListener {
 
     private final CardLayout cardLayout = new CardLayout();
@@ -40,7 +38,8 @@ public class ChatWindow extends JFrame implements ConnectionListener, MessageLis
     private VideoCallDialog activeVideoDialog;
 
     public ChatWindow() {
-        super("Pulse LAN Messenger — Salas, Audios y Conexión Directa");
+        super("wasa 3.0");
+        Theme.applyAppIcon(this);
         this.chatService = new ChatServiceImpl();
         this.chatService.addConnectionListener(this);
         this.chatService.addMessageListener(this);

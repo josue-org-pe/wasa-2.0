@@ -1,8 +1,6 @@
 package com.chatlocal.backend.model;
 
-/**
- * Tipos de mensajes soportados por el protocolo de comunicación.
- */
+// tipo de mensaje que se envia por el socket
 public enum MessageType {
     TEXT,
     FILE,

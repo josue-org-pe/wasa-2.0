@@ -9,10 +9,7 @@ import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 
-/**
- * Tarjeta interactiva de selección de rol (Host / Client).
- * Proporciona feedback visual inmediato al pasar el ratón y al seleccionarse.
- */
+// tarjeta para seleccionar si eres host o cliente en la pantalla de inicio
 public class RoleCard extends JPanel {
 
     private final ConnectionRole role;

@@ -6,10 +6,7 @@ import com.chatlocal.ui.theme.Theme;
 import javax.swing.*;
 import java.awt.*;
 
-/**
- * Pantalla intermedia de espera durante el establecimiento del socket y el handshake Ping/Pong.
- * Muestra una animación de pulso concéntrico generada con Java2D y el estado detallado.
- */
+// pantalla de espera mientras se conecta el socket y hace ping
 public class ConnectingPanel extends JPanel {
 
     public interface CancelCallback {

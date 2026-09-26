@@ -1,6 +1,6 @@
-# Wasa 2.0 (ChatLocal / Pulse LAN Messenger)
+# wasa 3.0
 
-Segunda versión moderna, modular y escalable del sistema de mensajería P2P y cliente-servidor LAN para el curso de **Programación Orientada a Objetos (POO)**.
+Proyecto de mensajería y videollamadas P2P en red local para el curso de Programación Orientada a Objetos (POO).
 
 ---
 
@@ -97,4 +97,4 @@ test-duo.bat
 ```cmd
 build.bat
 ```
-*(Requiere WiX Toolset 3.11+ para generar el instalador en `salida\ChatLocal-2.0.exe`)*
+*(Requiere WiX Toolset 3.11+ para generar el instalador en `salida\wasa-3.0.exe`)*

@@ -16,13 +16,7 @@ import javax.swing.event.DocumentListener;
 import java.awt.*;
 import java.util.List;
 
-/**
- * Barra lateral (Sidebar) estilo WhatsApp Desktop / Discord:
- * - Tarjeta superior de perfil con estado editable y botón de configuración ⚙️.
- * - Buscador rápido en tiempo real.
- * - Lista de Salas y Grupos con botón de nueva sala (+).
- * - Lista de contactos en línea en la red local.
- */
+// barra lateral con la lista de salas, contactos y buscador
 public class SidebarPanel extends JPanel {
 
     public interface SidebarCallback {

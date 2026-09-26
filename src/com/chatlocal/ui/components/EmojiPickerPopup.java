@@ -7,9 +7,7 @@ import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 
-/**
- * Popover emergente para selección de Emojis y Stickers expresivos.
- */
+// menu desplegable para escoger emojis o stickers rápidos
 public class EmojiPickerPopup extends JPopupMenu {
 
     public interface EmojiCallback {

@@ -1,8 +1,6 @@
 package com.chatlocal.backend.model;
 
-/**
- * Estado de confirmación de entrega y lectura de los mensajes.
- */
+// para saber si el mensaje se envio, se entrego o ya lo vieron (checks)
 public enum MessageStatus {
     SENDING("Enviando..."),
     SENT("Enviado al socket"),      // Single check ✓

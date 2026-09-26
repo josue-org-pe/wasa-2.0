@@ -6,9 +6,7 @@ import com.chatlocal.ui.theme.Theme;
 import javax.swing.*;
 import java.awt.*;
 
-/**
- * Píldora que muestra el resultado visual de la prueba de Ping y latencia.
- */
+// etiqueta con color que muestra el resultado del ping (ms)
 public class PingResultBadge extends JPanel {
 
     private enum State {

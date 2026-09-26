@@ -13,12 +13,7 @@ import javax.swing.*;
 import java.awt.*;
 import java.io.File;
 
-/**
- * Área principal de conversación y chat:
- * - Cabecera con título de sala, badge de latencia y estado.
- * - Feed de mensajes con burbujas, nombres con colores, notas de voz y checks.
- * - Barra inferior con adjuntos, selector de emojis/stickers, notas de voz y botón enviar.
- */
+// panel principal donde se ven los mensajes y la caja para escribir
 public class ChatAreaPanel extends JPanel {
 
     public interface ChatAreaCallback {

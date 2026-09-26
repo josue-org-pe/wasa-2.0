@@ -3,9 +3,7 @@ package com.chatlocal.backend.model;
 import java.io.Serializable;
 import java.util.UUID;
 
-/**
- * Representa una sala de chat, grupo temático o reunión local.
- */
+// clase para guardar los datos de una sala de chat
 public class ChatRoom implements Serializable {
 
     private final String id;

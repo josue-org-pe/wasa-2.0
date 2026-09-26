@@ -6,11 +6,7 @@ import com.chatlocal.backend.service.FileTransferManager;
 import java.io.*;
 import java.net.Socket;
 
-/**
- * Gestiona una conexión de socket abierta con el par remoto.
- * Proporciona métodos thread-safe para enviar texto, archivos, notas de voz y stickers,
- * y ejecuta un hilo de escucha continuo para deserializar paquetes entrantes.
- */
+// conexion por socket para mandar texto, archivos, audios y llamadas
 public class SocketConnection {
 
     public interface ConnectionCallback {

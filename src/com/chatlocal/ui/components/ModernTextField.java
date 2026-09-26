@@ -7,10 +7,7 @@ import java.awt.*;
 import java.awt.event.FocusAdapter;
 import java.awt.event.FocusEvent;
 
-/**
- * Campo de texto con diseño moderno: bordes redondeados, iluminación en foco,
- * padding interno cómodo y soporte de placeholder nativo.
- */
+// caja de texto con placeholder y bordes curvos
 public class ModernTextField extends JTextField {
 
     private String placeholder = "";

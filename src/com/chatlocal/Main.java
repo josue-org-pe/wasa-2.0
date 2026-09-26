@@ -4,11 +4,7 @@ import com.chatlocal.ui.ChatWindow;
 
 import javax.swing.*;
 
-/**
- * Punto de entrada oficial de ChatLocal.
- * Inicializa propiedades globales de renderizado gráfico de alta calidad
- * y despliega la ventana principal en el hilo de eventos (EDT).
- */
+// punto de entrada principal de wasa 3.0
 public class Main {
 
     public static void main(String[] args) {

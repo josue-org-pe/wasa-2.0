@@ -3,11 +3,7 @@ package com.chatlocal.backend.service.videocall;
 import java.awt.*;
 import java.awt.image.BufferedImage;
 
-/**
- * Fuente de video para compartir pantalla completa en tiempo real.
- * Utiliza java.awt.Robot para capturar el escritorio del sistema
- * y lo escala manteniendo la relación de aspecto para transmisión fluida en red.
- */
+// esto captura la pantalla usando Robot de java
 public class ScreenShareVideoSource implements VideoSource {
 
     private static final int TARGET_WIDTH = 1280;

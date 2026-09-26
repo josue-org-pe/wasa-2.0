@@ -12,13 +12,7 @@ import javax.swing.*;
 import java.awt.*;
 import java.io.File;
 
-/**
- * Renderizador de burbujas de chat individual:
- * - Nombres coloreados personalizados y avatar del usuario.
- * - Tarjetas interactivas de notas de voz con reproducción en tiempo real.
- * - Stickers expresivos y archivos adjuntos.
- * - Checks de entrega (✓ y ✓✓).
- */
+// panel que dibuja una burbuja de mensaje con nombre, avatar, audio o archivo
 public class ChatBubblePanel extends JPanel {
 
     private final ChatMessage message;

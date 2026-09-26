@@ -12,9 +12,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.List;
 
-/**
- * Contrato del servicio de backend para operaciones de red, salas, notas de voz y chat.
- */
+// interfaz con los metodos principales del servicio de chat
 public interface ChatService {
 
     void startHost(int port);

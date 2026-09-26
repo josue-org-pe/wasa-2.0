@@ -7,10 +7,7 @@ import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 
-/**
- * Control segmentado tipo selector de pestañas / píldora moderna.
- * Permite alternar limpiamente entre opciones con feedback visual táctil.
- */
+// barra para cambiar de pestana (ej. salas, contactos)
 public class SegmentedControl extends JPanel {
 
     public interface SelectionListener {

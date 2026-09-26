@@ -6,13 +6,7 @@ import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 
-/**
- * Fuente de video para captura de cámara web física en Windows.
- * Utiliza Windows.Media.Capture nativo con puente optimizado de PowerShell WinRT.
- * Lee cuadros en tiempo real directamente del hardware (Integrated Camera).
- * Si la cámara física tarda en inicializar o está ocupada, conmuta de forma
- * fluida a la cámara virtual hasta que los cuadros reales estén disponibles.
- */
+// esto captura la camara de la laptop usando powershell
 public class PhysicalWebcamSource implements VideoSource {
 
     private final String userName;

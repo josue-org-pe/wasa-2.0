@@ -1,9 +1,6 @@
 package com.chatlocal.backend.service.videocall;
 
-/**
- * Contrato del servicio de videollamadas para gestión del ciclo de llamada,
- * señalización, control de dispositivos (micrófono, cámara, pantalla) y eventos.
- */
+// interfaz del servicio de videollamadas (iniciar, contestar, colgar, silenciar)
 public interface VideoCallService {
 
     void initiateCall(String targetName);

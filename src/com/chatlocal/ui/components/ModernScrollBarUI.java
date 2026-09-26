@@ -6,9 +6,7 @@ import javax.swing.*;
 import javax.swing.plaf.basic.BasicScrollBarUI;
 import java.awt.*;
 
-/**
- * ScrollBar moderno, minimalista y oscuro sin botones triangulares toscos.
- */
+// barra de scroll personalizada para que no se vea fea
 public class ModernScrollBarUI extends BasicScrollBarUI {
 
     @Override

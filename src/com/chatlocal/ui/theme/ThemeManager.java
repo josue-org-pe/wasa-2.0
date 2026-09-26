@@ -4,10 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
-/**
- * Gestor dinámico de temas de la aplicación.
- * Permite cambiar la paleta de colores en caliente y notificar a los componentes visuales.
- */
+// cambia el tema actual y avisa a los componentes para repintar
 public final class ThemeManager {
 
     private static AppTheme currentTheme = AppTheme.NEON_CYBER;

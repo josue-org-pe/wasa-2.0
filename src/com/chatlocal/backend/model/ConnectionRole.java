@@ -1,8 +1,6 @@
 package com.chatlocal.backend.model;
 
-/**
- * Rol que asume la aplicación en la red de pares.
- */
+// indica si somos anfitrion (servidor) o cliente
 public enum ConnectionRole {
     HOST("Anfitrión (Esperar conexión)"),
     CLIENT("Cliente (Conectarse a anfitrión)");

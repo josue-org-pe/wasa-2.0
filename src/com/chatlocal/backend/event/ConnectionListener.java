@@ -2,9 +2,7 @@ package com.chatlocal.backend.event;
 
 import com.chatlocal.backend.model.ConnectionState;
 
-/**
- * Escuchador para cambios en el estado de la conexión de red.
- */
+// avisa cuando cambia la conexion o hay error
 public interface ConnectionListener {
     void onConnectionStateChanged(ConnectionState newState, String details);
     void onConnectionError(String errorMessage);

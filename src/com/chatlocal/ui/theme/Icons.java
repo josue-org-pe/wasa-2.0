@@ -5,10 +5,7 @@ import java.awt.*;
 import java.awt.geom.*;
 import java.awt.image.BufferedImage;
 
-/**
- * Fábrica de iconos vectoriales generados dinámicamente con Java2D.
- * Garantiza gráficos nítidos en cualquier resolución sin dependencias de archivos de imagen externos.
- */
+// iconos dibujados con Java2D para no necesitar imagenes externas
 public final class Icons {
 
     private Icons() {}

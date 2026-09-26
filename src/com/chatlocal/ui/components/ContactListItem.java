@@ -10,9 +10,7 @@ import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 
-/**
- * Elemento de la lista de salas y contactos en la barra lateral.
- */
+// item de cada contacto o sala en la barra lateral izquierda
 public class ContactListItem extends JPanel {
 
     public interface ContactActionCallback {

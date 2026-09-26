@@ -5,16 +5,12 @@ import java.util.ArrayList;
 import java.util.Enumeration;
 import java.util.List;
 
-/**
- * Utilidades de red para resolver direcciones IP y validar puertos.
- */
+// utilidades para sacar las ips de la maquina y validar puertos
 public final class NetworkUtils {
 
     private NetworkUtils() {}
 
-    /**
-     * Obtiene una lista con todas las IPs IPv4 locales no loopback de las interfaces activas.
-     */
+    // saca las ips de la pc para mostrarlas en la pantalla de conectar
     public static List<String> getAvailableLocalIps() {
         List<String> ips = new ArrayList<>();
         try {
@@ -39,24 +35,18 @@ public final class NetworkUtils {
         return ips;
     }
 
-    /**
-     * Retorna la IP local principal recomendada.
-     */
+    // regresa la primera ip encontrada
     public static String getPrimaryLocalIp() {
         List<String> ips = getAvailableLocalIps();
         return ips.isEmpty() ? "127.0.0.1" : ips.get(0);
     }
 
-    /**
-     * Valida si un puerto está dentro del rango válido de red TCP (1 - 65535).
-     */
+    // revisa que el puerto este entre 1024 y 65535
     public static boolean isValidPort(int port) {
         return port >= 1024 && port <= 65535;
     }
 
-    /**
-     * Valida sintácticamente una dirección IP o nombre de host.
-     */
+    // revisa si la ip es valida
     public static boolean isValidHost(String host) {
         if (host == null || host.trim().isEmpty()) return false;
         try {

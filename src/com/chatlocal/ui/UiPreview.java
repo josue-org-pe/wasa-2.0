@@ -12,11 +12,7 @@ import com.chatlocal.ui.theme.ThemeManager;
 import javax.swing.*;
 import java.awt.*;
 
-/**
- * Lanzador de vista previa de alta fidelidad sin necesidad de sockets.
- * Muestra el diseño completo con barra lateral (salas y contactos),
- * notas de voz interactivas, stickers, selector de temas y checks de lectura.
- */
+// clase para probar la interfaz visual rapido sin conectar la red
 public class UiPreview {
 
     public static void main(String[] args) {
@@ -28,7 +24,8 @@ public class UiPreview {
         } catch (Exception ignored) {}
 
         SwingUtilities.invokeLater(() -> {
-            JFrame frame = new JFrame("Pulse LAN Messenger — Vista Previa de Diseño");
+            JFrame frame = new JFrame("wasa 3.0 — Vista Previa");
+            com.chatlocal.ui.theme.Theme.applyAppIcon(frame);
             frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
             frame.setSize(880, 640);
             frame.setMinimumSize(new Dimension(720, 540));

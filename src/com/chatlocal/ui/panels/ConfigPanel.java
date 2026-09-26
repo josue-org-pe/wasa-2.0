@@ -80,12 +80,12 @@ public class ConfigPanel extends JPanel {
         panel.setOpaque(false);
         panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
 
-        JLabel title = new JLabel("ChatLocal P2P");
+        JLabel title = new JLabel("wasa 3.0");
         title.setFont(Theme.FONT_HERO);
         title.setForeground(Theme.TEXT_PRIMARY);
         title.setAlignmentX(Component.CENTER_ALIGNMENT);
 
-        JLabel subtitle = new JLabel("Comunicación directa por sockets en red local — Sin servidores externos");
+        JLabel subtitle = new JLabel("Comunicación directa en red local");
         subtitle.setFont(Theme.FONT_SUBTITLE);
         subtitle.setForeground(Theme.TEXT_SECONDARY);
         subtitle.setAlignmentX(Component.CENTER_ALIGNMENT);

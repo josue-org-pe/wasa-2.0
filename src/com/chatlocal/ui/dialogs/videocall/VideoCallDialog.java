@@ -18,13 +18,7 @@ import java.awt.event.WindowEvent;
 import java.awt.geom.RoundRectangle2D;
 import java.awt.image.BufferedImage;
 
-/**
- * Ventana principal de videollamada estilo Discord / FaceTime / Google Meet:
- * - Renderizado en tiempo real de video remoto a pantalla completa con aspect-ratio mantenido.
- * - Vista local flotante Picture-in-Picture (PiP) interactiva en la esquina superior derecha.
- * - Barra superior con temporizador de duración y badge de calidad HD.
- * - Dock inferior flotante con controles de Micrófono, Cámara, Compartir Pantalla y Colgar.
- */
+// ventana para la videollamada
 public class VideoCallDialog extends JDialog implements VideoCallListener {
 
     private final VideoCallService callService;
@@ -59,6 +53,7 @@ public class VideoCallDialog extends JDialog implements VideoCallListener {
         setLocationRelativeTo(parent);
         getContentPane().setBackground(ThemeManager.getTheme().bgDark);
 
+        Theme.applyAppIcon(this);
         buildUI();
 
         callService.addListener(this);
@@ -395,7 +390,7 @@ public class VideoCallDialog extends JDialog implements VideoCallListener {
         g2.drawString(title, (w - fm2.stringWidth(title)) / 2, cy + 80);
 
         g2.setFont(new Font("Segoe UI", Font.PLAIN, 12));
-        String sub = "La transmisión iniciará de forma automática en cuanto responda.";
+        String sub = "Esperando que conteste...";
         FontMetrics fm3 = g2.getFontMetrics();
         g2.setColor(new Color(148, 163, 184));
         g2.drawString(sub, (w - fm3.stringWidth(sub)) / 2, cy + 104);

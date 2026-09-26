@@ -1,6 +1,6 @@
 @echo off
 echo ========================================================
-echo   Vista previa de Interfaz de Login y Ping Pong (1 seg)
+echo   Vista previa de Login - wasa 3.0
 echo ========================================================
 if not exist out mkdir out
 javac -d out -encoding UTF-8 --source-path src src\com\chatlocal\Main.java

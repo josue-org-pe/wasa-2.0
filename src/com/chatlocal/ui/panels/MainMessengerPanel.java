@@ -11,11 +11,7 @@ import java.awt.*;
 import java.io.File;
 import java.io.IOException;
 
-/**
- * Contenedor maestro del mensajero activo:
- * - Panel lateral izquierdo (Sidebar con salas y contactos).
- * - Área central de conversación (ChatAreaPanel con feed, notas de voz y emojis).
- */
+// contenedor principal que une la barra lateral y el area de chat
 public class MainMessengerPanel extends JPanel {
 
     public interface MessengerActionCallback {

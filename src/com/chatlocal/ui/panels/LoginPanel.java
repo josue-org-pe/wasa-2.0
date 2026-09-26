@@ -14,11 +14,7 @@ import javax.swing.event.DocumentListener;
 import java.awt.*;
 import java.awt.datatransfer.StringSelection;
 
-/**
- * Pantalla de inicio de sesión (Login) y prueba de Ping / Handshake en tiempo real.
- * Permite personalizar el alias, probar la conectividad y seleccionar el modo
- * de sala multicliente o unión a servidor existente.
- */
+// panel para iniciar sesion y conectarse
 public class LoginPanel extends JPanel {
 
     public interface LoginCallback {
@@ -98,12 +94,12 @@ public class LoginPanel extends JPanel {
         lblAvatarPreview = new JLabel(Icons.avatar("U", 60, Theme.PRIMARY, Theme.TEXT_PRIMARY));
         lblAvatarPreview.setAlignmentX(Component.CENTER_ALIGNMENT);
 
-        JLabel lblTitle = new JLabel("Bienvenido a ChatLocal");
+        JLabel lblTitle = new JLabel("wasa 3.0");
         lblTitle.setFont(Theme.FONT_TITLE);
         lblTitle.setForeground(Theme.TEXT_PRIMARY);
         lblTitle.setAlignmentX(Component.CENTER_ALIGNMENT);
 
-        JLabel lblSubtitle = new JLabel("Salas multicliente y mensajería en red local");
+        JLabel lblSubtitle = new JLabel("Mensajería y videollamadas");
         lblSubtitle.setFont(Theme.FONT_CAPTION);
         lblSubtitle.setForeground(Theme.TEXT_MUTED);
         lblSubtitle.setAlignmentX(Component.CENTER_ALIGNMENT);

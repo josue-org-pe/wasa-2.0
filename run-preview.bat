@@ -1,6 +1,6 @@
 @echo off
 echo ========================================================
-echo   Vista previa de UI / UX de ChatLocal (Sin red)
+echo   Vista previa de UI - wasa 3.0
 echo ========================================================
 if not exist out mkdir out
 javac -d out -encoding UTF-8 --source-path src src\com\chatlocal\ui\UiPreview.java

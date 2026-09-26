@@ -5,9 +5,7 @@ import com.chatlocal.ui.theme.Theme;
 import javax.swing.*;
 import java.awt.*;
 
-/**
- * Contenedor estilo tarjeta con bordes curvos y fondo elevado.
- */
+// tarjeta con bordes redondeados y fondo oscuro
 public class ModernCard extends JPanel {
 
     private int cornerRadius = 14;

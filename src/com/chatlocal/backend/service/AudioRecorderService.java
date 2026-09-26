@@ -3,11 +3,7 @@ package com.chatlocal.backend.service;
 import javax.sound.sampled.*;
 import java.io.*;
 
-/**
- * Servicio nativo para grabación y reproducción de notas de voz en formato WAV.
- * Utiliza 100% la Java Sound API estándar (javax.sound.sampled) con captura en búfer
- * de memoria y reproducción fluida mediante SourceDataLine sin dependencias externas.
- */
+// graba y reproduce los audios de voz en wav
 public class AudioRecorderService {
 
     private TargetDataLine targetLine;

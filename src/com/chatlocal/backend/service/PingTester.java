@@ -9,10 +9,7 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.Socket;
 
-/**
- * Utilidad para realizar pruebas de Ping / Handshake en tiempo real a un servidor.
- * Mide la latencia de ida y vuelta (RTT) en milisegundos sin bloquear la interfaz.
- */
+// clase para medir el ping y ver si el otro lado responde rapido
 public final class PingTester {
 
     private PingTester() {}
@@ -52,9 +49,7 @@ public final class PingTester {
         void onPingComplete(PingResult result);
     }
 
-    /**
-     * Ejecuta una prueba de Ping síncrona a un host y puerto.
-     */
+    // manda un ping por el socket y espera el pong
     public static PingResult measurePing(String host, int port, int timeoutMs) {
         long startTime = System.currentTimeMillis();
         try (Socket socket = new Socket()) {
@@ -90,9 +85,7 @@ public final class PingTester {
         }
     }
 
-    /**
-     * Ejecuta la prueba de Ping en un hilo daemon y despacha el resultado en el Event Dispatch Thread (EDT) de Swing.
-     */
+    // hace el ping en segundo plano para no congelar la pantalla
     public static void testPingAsync(String host, int port, int timeoutMs, PingCallback callback) {
         Thread thread = new Thread(() -> {
             PingResult result = measurePing(host, port, timeoutMs);

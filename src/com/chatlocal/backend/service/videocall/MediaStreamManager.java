@@ -13,12 +13,7 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
-/**
- * Motor multimedia de baja latencia para videollamadas.
- * - Transporta video comprimido en JPEG y audio PCM 16kHz sobre UDP puro.
- * - Fragmenta cuadros de video en paquetes MTU-safe para prevenir caídas de paquetes.
- * - Gestiona líneas de captura y reproducción de audio en tiempo real con AudioSystem.
- */
+// aqui transmitimos el audio y video por paquetes udp
 public class MediaStreamManager {
 
     private static final byte PKT_VIDEO = 1;

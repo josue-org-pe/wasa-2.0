@@ -3,9 +3,7 @@ package com.chatlocal.backend.model;
 import java.io.Serializable;
 import java.util.UUID;
 
-/**
- * Representa el perfil de identidad de un usuario en el chat.
- */
+// datos del perfil del usuario (nombre, ip, puerto y foto)
 public class UserProfile implements Serializable {
 
     private final String id;

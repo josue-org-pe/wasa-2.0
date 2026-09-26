@@ -23,10 +23,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-/**
- * Implementación robusta del servicio de chat con soporte multicliente, salas,
- * notas de voz, stickers, bloqueo de usuarios y verificación Ping/Pong.
- */
+// implementacion del servicio de chat con sockets, salas, notas de voz y llamadas
 public class ChatServiceImpl implements ChatService, SocketConnection.ConnectionCallback {
 
     private final List<ConnectionListener> connectionListeners = new CopyOnWriteArrayList<>();

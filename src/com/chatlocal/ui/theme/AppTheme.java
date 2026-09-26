@@ -2,9 +2,7 @@ package com.chatlocal.ui.theme;
 
 import java.awt.Color;
 
-/**
- * Representa una paleta de tema visual para la aplicación.
- */
+// colores de los temas de la app
 public class AppTheme {
 
     private final String id;

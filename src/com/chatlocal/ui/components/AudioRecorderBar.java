@@ -8,10 +8,7 @@ import javax.swing.*;
 import java.awt.*;
 import java.io.File;
 
-/**
- * Barra visual de grabación de audio con contador de tiempo en vivo,
- * indicador de pulso animado y opciones de enviar o descartar.
- */
+// barra que sale cuando estas grabando una nota de voz
 public class AudioRecorderBar extends JPanel {
 
     public interface AudioRecordCallback {

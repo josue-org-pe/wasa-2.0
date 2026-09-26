@@ -1,8 +1,6 @@
 package com.chatlocal.backend.network;
 
-/**
- * Constantes del protocolo binario de sockets para ChatLocal.
- */
+// codigos para saber que tipo de dato estamos enviando por el socket
 public final class ProtocolConstants {
 
     private ProtocolConstants() {}

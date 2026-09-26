@@ -6,9 +6,7 @@ import com.chatlocal.ui.theme.Theme;
 import javax.swing.*;
 import java.awt.*;
 
-/**
- * Píldora de estado con punto luminoso y etiqueta descriptiva.
- */
+// etiqueta redondeada con punto verde/rojo que indica el estado actual
 public class StatusBadge extends JPanel {
 
     private String text = "Desconectado";

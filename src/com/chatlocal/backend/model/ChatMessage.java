@@ -4,11 +4,7 @@ import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 import java.util.UUID;
 
-/**
- * Representa un mensaje intercambiado (Texto, Archivo, Nota de Voz, Sticker, Sistema).
- * Contiene metadatos de confirmación de entrega (MessageStatus), duración de audios
- * y color de remitente para renderizado de alta calidad.
- */
+// modelo para los mensajes del chat
 public class ChatMessage {
 
     private static final DateTimeFormatter TIME_FORMATTER = DateTimeFormatter.ofPattern("HH:mm");

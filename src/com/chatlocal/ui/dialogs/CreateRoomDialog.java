@@ -9,9 +9,7 @@ import com.chatlocal.ui.theme.ThemeManager;
 import javax.swing.*;
 import java.awt.*;
 
-/**
- * Diálogo modal para crear una nueva sala, grupo temático o reunión local.
- */
+// ventana para crear una nueva sala o grupo
 public class CreateRoomDialog extends JDialog {
 
     private final ChatService chatService;
@@ -23,7 +21,7 @@ public class CreateRoomDialog extends JDialog {
     private JCheckBox chkMeeting;
 
     public CreateRoomDialog(Frame parent, ChatService chatService, Runnable onRoomCreated) {
-        super(parent, "Crear Nueva Sala / Reunión Local", true);
+        super(parent, "Crear Sala", true);
         this.chatService = chatService;
         this.onRoomCreated = onRoomCreated;
 
@@ -31,6 +29,7 @@ public class CreateRoomDialog extends JDialog {
         setLocationRelativeTo(parent);
         setResizable(false);
         getContentPane().setBackground(ThemeManager.getTheme().bgDark);
+        com.chatlocal.ui.theme.Theme.applyAppIcon(this);
 
         buildUI();
     }
@@ -42,7 +41,7 @@ public class CreateRoomDialog extends JDialog {
         root.setLayout(new BoxLayout(root, BoxLayout.Y_AXIS));
         root.setBorder(BorderFactory.createEmptyBorder(18, 22, 18, 22));
 
-        JLabel lblTitle = new JLabel("Configura tu nueva Sala o Reunión");
+        JLabel lblTitle = new JLabel("Crear nueva sala o grupo");
         lblTitle.setFont(new Font("Segoe UI", Font.BOLD, 15));
         lblTitle.setForeground(ThemeManager.getTheme().textPrimary);
         root.add(lblTitle);

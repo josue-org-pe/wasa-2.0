@@ -1,8 +1,6 @@
 package com.chatlocal.backend.model;
 
-/**
- * Estados del ciclo de vida de la conexión.
- */
+// estados por los que pasa la conexion del socket
 public enum ConnectionState {
     DISCONNECTED("Desconectado"),
     LISTENING("Esperando conexión entrante..."),

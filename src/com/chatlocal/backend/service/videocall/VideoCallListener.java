@@ -2,33 +2,21 @@ package com.chatlocal.backend.service.videocall;
 
 import java.awt.image.BufferedImage;
 
-/**
- * Escuchador de eventos para actualización de la interfaz gráfica durante una videollamada.
- */
+// interfaz para recibir avisos de cuando cambia la llamada o llega un frame
 public interface VideoCallListener {
 
-    /**
-     * Notifica un cambio en el estado de la llamada (IDLE, OUTGOING, INCOMING, CONNECTED, ENDED).
-     */
+    // avisa cuando cambia de estado (llamando, conectado, colgado)
     void onCallStateChanged(CallState newState, String peerName, String message);
 
-    /**
-     * Notifica la llegada de una solicitud de videollamada desde un par remoto.
-     */
+    // avisa cuando entra una llamada
     void onIncomingCallReceived(String callerName, String peerIp, int mediaPort);
 
-    /**
-     * Nuevo cuadro de video local generado (para renderizado en PiP o miniatura).
-     */
+    // nuevo frame de nuestra camara local
     void onLocalFrameAvailable(BufferedImage frame);
 
-    /**
-     * Nuevo cuadro de video remoto recibido y decodificado (para renderizado en vista principal).
-     */
+    // nuevo frame de la otra persona
     void onRemoteFrameAvailable(BufferedImage frame);
 
-    /**
-     * Actualización de niveles de audio RMS (0.0 a 1.0) para indicadores visuales de voz.
-     */
+    // nivel del microfono para la animacion
     void onAudioLevelsUpdated(float localLevel, float remoteLevel);
 }

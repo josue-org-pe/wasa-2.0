@@ -15,12 +15,7 @@ import java.awt.*;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 
-/**
- * Notificación modal elegante para llamadas entrantes:
- * - Avatar con halo pulsante animado.
- * - Generador de tono de timbre melódico sintético de baja latencia sin archivos externos.
- * - Botones rápidos de Aceptar (Verde) y Rechazar (Rojo).
- */
+// ventana que avisa cuando entra una llamada
 public class IncomingCallDialog extends JDialog {
 
     private final VideoCallService callService;
@@ -42,6 +37,7 @@ public class IncomingCallDialog extends JDialog {
         setSize(380, 260);
         setLocationRelativeTo(parent);
         setBackground(new Color(0, 0, 0, 0));
+        Theme.applyAppIcon(this);
 
         buildUI();
         startRingtone();

@@ -1,8 +1,6 @@
 package com.chatlocal.backend.service.videocall;
 
-/**
- * Fuentes de video seleccionables durante una videollamada.
- */
+// tipos de camara que se pueden seleccionar
 public enum VideoSourceType {
     PHYSICAL_WEBCAM("Cámara Web Integrada"),
     VIRTUAL_CAMERA("Cámara Virtual con Avatar"),

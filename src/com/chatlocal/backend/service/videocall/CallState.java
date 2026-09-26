@@ -1,8 +1,6 @@
 package com.chatlocal.backend.service.videocall;
 
-/**
- * Estados del ciclo de vida de una videollamada.
- */
+// estados de la videollamada
 public enum CallState {
     IDLE,
     OUTGOING_CALL,

@@ -1,12 +1,7 @@
 import java.io.*;
 import java.net.*;
 
-/**
- * Envuelve un Socket ya conectado y maneja el envío/recepción
- * de mensajes de texto y archivos de forma simultánea (dúplex).
- * Sirve igual para el lado servidor y el lado cliente: una vez
- * conectados, ambos hablan por el mismo protocolo.
- */
+// maneja la conexion por socket para enviar mensajes y archivos
 public class ChatConnection {
 
     public interface Listener {
@@ -58,9 +53,8 @@ public class ChatConnection {
         String nombre = in.readUTF();
         long tamano = in.readLong();
 
-        // Se guarda en la carpeta del usuario (no en la carpeta de instalación),
-        // porque esa suele requerir permisos de administrador para escribir.
-        File carpeta = new File(System.getProperty("user.home"), "ChatLocal" + File.separator + "archivos_recibidos");
+        // se guarda en la carpeta wasa del usuario
+        File carpeta = new File(System.getProperty("user.home"), "wasa" + File.separator + "archivos_recibidos");
         if (!carpeta.exists()) carpeta.mkdirs();
         File destino = new File(carpeta, nombre);
 

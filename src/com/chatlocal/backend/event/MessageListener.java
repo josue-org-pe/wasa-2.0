@@ -2,9 +2,7 @@ package com.chatlocal.backend.event;
 
 import com.chatlocal.backend.model.ChatMessage;
 
-/**
- * Escuchador para eventos de recepción y emisión de mensajes.
- */
+// avisa cuando llega un mensaje, archivo o audio nuevo
 public interface MessageListener {
     void onMessageReceived(ChatMessage message);
     void onFileReceived(ChatMessage message);

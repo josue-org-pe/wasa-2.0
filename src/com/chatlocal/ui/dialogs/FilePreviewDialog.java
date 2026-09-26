@@ -13,10 +13,7 @@ import java.awt.geom.RoundRectangle2D;
 import java.awt.image.BufferedImage;
 import java.io.File;
 
-/**
- * Diálogo modal para previsualizar archivos e imágenes antes de enviarlos.
- * Permite verificar el contenido, ver tamaño exacto y añadir un comentario opcional.
- */
+// ventana para ver el archivo antes de enviarlo
 public class FilePreviewDialog extends JDialog {
 
     public interface FilePreviewCallback {
@@ -28,7 +25,7 @@ public class FilePreviewDialog extends JDialog {
     private ModernTextField txtCaption;
 
     public FilePreviewDialog(Window parent, File file, FilePreviewCallback callback) {
-        super(parent, "Vista previa de archivo", ModalityType.APPLICATION_MODAL);
+        super(parent, "Vista previa", ModalityType.APPLICATION_MODAL);
         this.file = file;
         this.callback = callback;
 
@@ -36,6 +33,7 @@ public class FilePreviewDialog extends JDialog {
         setLocationRelativeTo(parent);
         setResizable(false);
         getContentPane().setBackground(ThemeManager.getTheme().bgDark);
+        Theme.applyAppIcon(this);
 
         buildUI();
     }
